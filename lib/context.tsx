@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, getAccessToken, setAccessToken, removeAccessToken } from "./api";
+import { User, getAccessToken, setAccessToken, removeAccessToken, getCurrentUser } from "./api";
 
 interface AppContextType {
   currentUser: User | null;
@@ -16,11 +16,30 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Проверяем наличие токена при загрузке
+  // Проверяем наличие токена при загрузке и получаем информацию о пользователе
   useEffect(() => {
-    const token = getAccessToken();
-    setIsAuthenticated(!!token);
+    async function checkAuth() {
+      const token = getAccessToken();
+      if (token) {
+        try {
+          const user = await getCurrentUser();
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } catch (error) {
+          // Токен невалиден или истек, удаляем его
+          console.error("Failed to get current user:", error);
+          removeAccessToken();
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+      setIsLoading(false);
+    }
+    checkAuth();
   }, []);
 
   const login = (user: User, token: string) => {

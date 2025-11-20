@@ -74,3 +74,15 @@ export async function generatePairs(eventId: string): Promise<PairDto[]> {
   return response.json();
 }
 
+export async function getEventPairs(eventId: string): Promise<PairDto[]> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/pairs`);
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Не удалось загрузить пары мероприятия");
+  }
+  return response.json();
+}
+

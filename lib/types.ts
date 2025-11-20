@@ -30,7 +30,9 @@ export interface Participant {
 }
 
 export interface PairDto {
+  santaId: string;
   santaName: string;
+  childId: string;
   childName: string;
   childWishlist?: string;
 }
@@ -61,5 +63,22 @@ export interface PhoneAuthRequest {
 export interface PhoneAuthResponse {
   user: User | null; // Can be null if user doesn't exist
   isNewUser: boolean;
+}
+
+// Сообщения
+export interface MessageDto {
+  id: string;
+  eventId: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface SendMessageRequest {
+  senderId: string;
+  recipientId: string;
+  content: string;
 }
 

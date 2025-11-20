@@ -11,6 +11,8 @@ export type {
   AuthResponse,
   PhoneAuthRequest,
   PhoneAuthResponse,
+  MessageDto,
+  SendMessageRequest,
 } from "./types";
 
 // Функции для работы с токеном
@@ -28,12 +30,14 @@ export {
   getEventBySlug,
   createEvent,
   generatePairs,
+  getEventPairs,
 } from "./events";
 
 // API для пользователей
 export {
   getUsers,
   createUser,
+  getCurrentUser,
 } from "./users";
 
 // API для участников
@@ -51,3 +55,10 @@ export {
   checkUserExists,
   authenticateOrRegisterByPhone,
 } from "./auth";
+
+// API для сообщений
+export {
+  getMessages,
+  sendMessage,
+  markMessageAsRead,
+} from "./messages";

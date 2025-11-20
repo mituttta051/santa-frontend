@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/context";
+import { EventCard } from "@/components/events/EventCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { subscribeUser, unsubscribeUser, sendNotification } from "./actions";
+import { getEvents, getParticipants, type Event, type Participant } from "@/lib/api";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -179,12 +181,58 @@ function PushNotificationManager() {
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, currentUser, logout } = useApp();
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
+  const [isEventsLoading, setIsEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser) {
+      setUserEvents([]);
+      return;
+    }
+
+    const userId = currentUser.id;
+    let isMounted = true;
+    async function loadUserEvents() {
+      try {
+        setIsEventsLoading(true);
+        setEventsError(null);
+
+        const [events, participants] = await Promise.all([getEvents(), getParticipants()]);
+
+        const myEventIds = new Set(
+          participants
+            .filter((participant: Participant) => participant.userId === userId)
+            .map((participant) => participant.eventId)
+        );
+
+        if (!isMounted) return;
+
+        const filteredEvents = events.filter((event: Event) => myEventIds.has(event.id));
+        setUserEvents(filteredEvents);
+      } catch (error) {
+        if (!isMounted) return;
+        const message = error instanceof Error ? error.message : "Не удалось загрузить мероприятия";
+        setEventsError(message);
+      } finally {
+        if (isMounted) {
+          setIsEventsLoading(false);
+        }
+      }
+    }
+
+    loadUserEvents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, currentUser]);
 
   if (!isAuthenticated) {
     return null; // Пока идет редирект
@@ -201,9 +249,39 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Перейди по ссылке события, чтобы начать
-            </p>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold">Мои мероприятия</h3>
+                <p className="text-sm text-muted-foreground">
+                  Все события, в которых вы участвуете
+                </p>
+              </div>
+              {isEventsLoading && (
+                <p className="text-sm text-muted-foreground">Загружаем мероприятия...</p>
+              )}
+              {!isEventsLoading && eventsError && (
+                <p className="text-sm text-destructive">{eventsError}</p>
+              )}
+              {!isEventsLoading && !eventsError && userEvents.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Администратор мероприятия скоро вас добавит на мероприятие
+                </p>
+              )}
+              <div className="space-y-3">
+                {userEvents.map((event) => (
+                  <div key={event.id} className="space-y-2">
+                    <EventCard event={event} />
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => router.push(`/events/${event.id}`)}
+                    >
+                      Открыть мероприятие
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
             <PushNotificationManager />
             <Button
               variant="outline"
