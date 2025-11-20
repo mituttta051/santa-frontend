@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "node server.js",
+    "dev:http": "node server-http.js",
+    "dev:webpack": "next dev --webpack",
+    "dev:https": "next dev --webpack --experimental-https",
     "build": "next build",
     "start": "next start",
     "start:network": "next start -H 0.0.0.0",
@@ -19,6 +22,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^3.4.0",
+    "web-push": "^3.6.7",
     "workbox-window": "^7.3.0"
   },
   "devDependencies": {

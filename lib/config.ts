@@ -13,9 +13,11 @@ export function getApiBaseUrl(): string {
   // На клиенте определяем IP автоматически
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    // Если это не localhost, используем тот же хост для API
-    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-      const apiUrl = `http://${hostname}:8080/api`;
+    const protocol = window.location.protocol === "https:" ? "https" : "http";
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+    if (!isLocalHost) {
+      const port = protocol === "https" ? "" : ":8080";
+      const apiUrl = `${protocol}://${hostname}${port}/api`;
       console.log("API Base URL (detected from hostname):", apiUrl);
       return apiUrl;
     }
@@ -34,9 +36,12 @@ export function fixApiUrl(url: string): string {
   }
 
   const hostname = window.location.hostname;
-  // Если URL содержит localhost, но мы на другом хосте, заменяем
-  if (url.includes("localhost:8080") && hostname !== "localhost" && hostname !== "127.0.0.1") {
-    return url.replace("localhost:8080", `${hostname}:8080`);
+  const protocol = window.location.protocol === "https:" ? "https" : "http";
+  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+  // Если URL содержит localhost, но мы на другом хосте, заменяем и подставляем корректный протокол/порт
+  if (url.includes("localhost:8080") && !isLocalHost) {
+    const port = protocol === "https" ? "" : ":8080";
+    return url.replace("http://localhost:8080", `${protocol}://${hostname}${port}`);
   }
   
   return url;
