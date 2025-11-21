@@ -27,6 +27,8 @@ export interface Participant {
   wishlist?: string;
   eventId: string;
   userId: string;
+  santaCollectionId?: string;
+  selectedTasks?: SantaTask[];
 }
 
 export interface PairDto {
@@ -80,5 +82,35 @@ export interface SendMessageRequest {
   senderId: string;
   recipientId: string;
   content: string;
+}
+
+// Задачи и коллекции задач
+export interface SantaTask {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskRequest {
+  title: string;
+  description?: string;
+}
+
+export interface SantaCollection {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  tasks: SantaTask[];
+}
+
+export interface CreateSantaCollectionRequest {
+  name: string;
+  description?: string;
+  taskIds?: string[];
+  tasks?: CreateTaskRequest[];
 }
 

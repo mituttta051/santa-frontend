@@ -1,19 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
+import { AdminHeaderCard } from "@/components/admin/AdminHeaderCard";
+import { AdminLoginCard } from "@/components/admin/AdminLoginCard";
+import { CollectionsCard } from "@/components/admin/CollectionsCard";
+import { EventCreationSection } from "@/components/admin/EventCreationSection";
+import { EventsCard } from "@/components/admin/EventsCard";
+import { ParticipantsCard } from "@/components/admin/ParticipantsCard";
+import { CreateTaskCollectionModal } from "@/components/tasks/CreateTaskCollectionModal";
 import { useApp } from "@/lib/context";
-import { getEvents, Event, login, LoginRequest } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Settings } from "lucide-react";
-import { LoginForm } from "@/components/auth/LoginForm";
-import { CreateEventForm } from "@/components/events/CreateEventForm";
-import { EventList } from "@/components/events/EventList";
-import type { AuthResponse } from "@/lib/types";
+import {
+  getEvents,
+  getParticipants,
+  getSantaCollections,
+  getSantaTasks,
+  Event,
+  LoginRequest,
+} from "@/lib/api";
+import type {
+  AuthResponse,
+  Participant,
+  SantaCollection,
+  SantaTask,
+} from "@/lib/types";
 
 export default function AdminPage() {
-  const router = useRouter();
   const { currentUser, login: loginUser } = useApp();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,11 +35,21 @@ export default function AdminPage() {
     password: "",
   });
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [tasks, setTasks] = useState<SantaTask[]>([]);
+  const [collections, setCollections] = useState<SantaCollection[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [collectionsError, setCollectionsError] = useState<string | null>(null);
+  const [participantsError, setParticipantsError] = useState<string | null>(null);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser?.isAdmin) {
       loadEvents();
+      loadTasks();
+      loadCollections();
+      loadParticipants();
     }
   }, [currentUser]);
 
@@ -43,9 +65,67 @@ export default function AdminPage() {
     }
   };
 
+  const loadTasks = async () => {
+    try {
+      const tasksData = await getSantaTasks();
+      setTasks(tasksData);
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+      throw err;
+    }
+  };
+
+  const loadCollections = async () => {
+    try {
+      setCollectionsLoading(true);
+      setCollectionsError(null);
+      const collectionsData = await getSantaCollections();
+      setCollections(collectionsData);
+    } catch (err) {
+      console.error("Ошибка при загрузке коллекций:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Не удалось загрузить коллекции задач";
+      setCollectionsError(errorMessage);
+    } finally {
+      setCollectionsLoading(false);
+    }
+  };
+
+  const loadParticipants = async () => {
+    try {
+      setParticipantsLoading(true);
+      setParticipantsError(null);
+      const participantsData = await getParticipants();
+      setParticipants(participantsData);
+    } catch (err) {
+      console.error("Ошибка при загрузке участников:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Не удалось загрузить участников";
+      setParticipantsError(errorMessage);
+    } finally {
+      setParticipantsLoading(false);
+    }
+  };
+
   const handleCreateEventSuccess = () => {
     setShowCreateForm(false);
     loadEvents();
+  };
+
+  const handleCollectionCreated = (collection: SantaCollection) => {
+    setCollections((prev) => [collection, ...prev]);
+    setIsCollectionModalOpen(false);
+    loadTasks();
+  };
+
+  const handleParticipantUpdated = (updatedParticipant: Participant) => {
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === updatedParticipant.id ? updatedParticipant : p))
+    );
   };
 
   const handleLoginSuccess = (response: AuthResponse) => {
@@ -61,36 +141,16 @@ export default function AdminPage() {
     setLoginError(error);
   };
 
-  // Форма входа, если пользователь не авторизован как админ
   if (!currentUser?.isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Settings className="h-5 w-5" />
-              Вход в админ-панель
-            </CardTitle>
-            <CardDescription>
-              Введите номер телефона и пароль администратора
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <LoginForm
-              phoneNumber={loginForm.phoneNumber}
-              onPhoneChange={(phone) => setLoginForm({ ...loginForm, phoneNumber: phone })}
-              onSuccess={handleLoginSuccess}
-              onError={handleLoginError}
-              onBack={undefined}
-              showPhoneField={false}
-            />
-            {loginError && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {loginError}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AdminLoginCard
+          loginForm={loginForm}
+          loginError={loginError}
+          onPhoneChange={(phone) => setLoginForm({ ...loginForm, phoneNumber: phone })}
+          onLoginSuccess={handleLoginSuccess}
+          onLoginError={handleLoginError}
+        />
       </div>
     );
   }
@@ -98,44 +158,44 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-4xl space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Панель администратора
-            </CardTitle>
-            <CardDescription>Управление событиями и пользователями</CardDescription>
-          </CardHeader>
-        </Card>
+        <AdminHeaderCard />
 
-        {showCreateForm ? (
-          <CreateEventForm
-            onSuccess={handleCreateEventSuccess}
-            onCancel={() => {
-              setShowCreateForm(false);
-            }}
-          />
-        ) : (
-          <Button
-            onClick={() => {
-              setShowCreateForm(true);
-            }}
-            className="w-full"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Создать новое событие
-          </Button>
-        )}
+        <EventCreationSection
+          showCreateForm={showCreateForm}
+          onToggleForm={setShowCreateForm}
+          onCreateSuccess={handleCreateEventSuccess}
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Все события</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EventList events={events} loading={loading} />
-          </CardContent>
-        </Card>
+        <EventsCard events={events} loading={loading} />
+
+        <CollectionsCard
+          collections={collections}
+          loading={collectionsLoading}
+          error={collectionsError}
+          onRefresh={loadCollections}
+          onCreateCollection={() => setIsCollectionModalOpen(true)}
+        />
+
+        <ParticipantsCard
+          participants={participants}
+          events={events}
+          collections={collections}
+          loading={participantsLoading}
+          error={participantsError}
+          onRefresh={loadParticipants}
+          onParticipantUpdated={handleParticipantUpdated}
+        />
       </div>
+
+      {isCollectionModalOpen && (
+        <CreateTaskCollectionModal
+          tasks={tasks}
+          onClose={() => setIsCollectionModalOpen(false)}
+          onCreated={handleCollectionCreated}
+        />
+      )}
     </div>
   );
 }
+
+

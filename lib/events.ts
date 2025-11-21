@@ -86,3 +86,55 @@ export async function getEventPairs(eventId: string): Promise<PairDto[]> {
   return response.json();
 }
 
+export async function getSelectedTasksForSanta(
+  eventId: string,
+): Promise<import("./types").Participant> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/selected-tasks-for-santa`);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    let errorMessage = "Не удалось загрузить выбранные задания";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      const errorText = await response.text();
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
+  }
+  return response.json();
+}
+
+export async function selectTasksForSanta(
+  eventId: string,
+  taskIds: string[],
+): Promise<import("./types").Participant> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/select-tasks-for-santa`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ taskIds }),
+  });
+  if (!response.ok) {
+    let errorMessage = "Не удалось выбрать задания";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      const errorText = await response.text();
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
+  }
+  return response.json();
+}
+

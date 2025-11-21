@@ -8,6 +8,7 @@ import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { getMessages, sendMessage, markMessageAsRead, type MessageDto, type SendMessageRequest } from "@/lib/api";
 import type { PairDto, Participant, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { initializeNotifications, showMessageNotification, hasNotificationPermission } from "@/lib/notifications";
 
 interface ChatCardProps {
   eventId: string;
@@ -53,6 +54,9 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
   const [pendingMessageIds, setPendingMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousMessagesRef = useRef<MessageDto[]>([]);
+  const notificationsInitializedRef = useRef(false);
+  const isFirstLoadRef = useRef(true);
 
   // Находим пару, где текущий пользователь является Сантой
   const myPairAsSanta = pairs.find((p) => p.santaName === currentUser?.name);
@@ -75,12 +79,37 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
   const otherParticipantId = getOtherParticipantId();
   const canChat = participant && otherParticipantId;
 
+  // Инициализация уведомлений
+  useEffect(() => {
+    if (!notificationsInitializedRef.current) {
+      initializeNotifications().catch(console.error);
+      notificationsInitializedRef.current = true;
+    }
+  }, []);
+
+  // Получаем имя отправителя для уведомления
+  const getSenderName = (senderId: string): string => {
+    if (senderId === myPairAsChild?.santaId) {
+      return myPairAsChild.santaName;
+    }
+    if (senderId === myPairAsSanta?.childId) {
+      return myPairAsSanta.childName;
+    }
+    return "Секретный Санта";
+  };
+
   // Загрузка сообщений
   useEffect(() => {
     if (!canChat) {
       setMessages([]);
+      previousMessagesRef.current = [];
+      isFirstLoadRef.current = true;
       return;
     }
+
+    // Сбрасываем флаг первой загрузки при смене чата
+    isFirstLoadRef.current = true;
+    previousMessagesRef.current = [];
 
     let isMounted = true;
 
@@ -91,7 +120,25 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
         setError(null);
         const loadedMessages = await getMessages(eventId, participant.id, otherParticipantId);
         if (isMounted) {
+          // Проверяем новые сообщения для уведомлений
+          // Не показываем уведомления при первой загрузке или при смене чата
+          if (!isFirstLoadRef.current && previousMessagesRef.current.length > 0 && hasNotificationPermission()) {
+            const previousMessageIds = new Set(previousMessagesRef.current.map(m => m.id));
+            const newMessages = loadedMessages.filter(msg => 
+              !previousMessageIds.has(msg.id) && 
+              msg.recipientId === participant.id // Только сообщения, адресованные текущему пользователю
+            );
+            
+            // Показываем уведомления для новых сообщений
+            for (const newMsg of newMessages) {
+              const senderName = getSenderName(newMsg.senderId);
+              showMessageNotification(senderName, newMsg.content, eventId).catch(console.error);
+            }
+          }
+          
           setMessages(loadedMessages);
+          previousMessagesRef.current = loadedMessages;
+          isFirstLoadRef.current = false;
           // Убираем из pending те сообщения, которые теперь есть в обновленном списке
           // Это означает, что они успешно сохранены на сервере с правильным временем
           setPendingMessageIds((prev) => {

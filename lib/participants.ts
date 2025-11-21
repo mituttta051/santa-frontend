@@ -54,3 +54,36 @@ export async function updateWishlist(participantId: string, wishlist: string): P
   return response.json();
 }
 
+export async function assignCollectionToParticipant(
+  participantId: string,
+  collectionId: string,
+): Promise<Participant> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/participants/${participantId}/santa-collection/${collectionId}`);
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Не удалось назначить коллекцию: ${response.status} ${errorText}`);
+  }
+  return response.json();
+}
+
+export async function unassignCollectionFromParticipant(
+  participantId: string,
+): Promise<Participant> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/participants/${participantId}/santa-collection`);
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Не удалось снять коллекцию: ${response.status} ${errorText}`);
+  }
+  return response.json();
+}
+

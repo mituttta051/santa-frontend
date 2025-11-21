@@ -8,6 +8,8 @@ import { ArrowLeft } from "lucide-react";
 import { useApp } from "@/lib/context";
 import { EventCard } from "@/components/events/EventCard";
 import { PairsCard } from "@/components/events/PairsCard";
+import { SantaSelectedTasksCard } from "@/components/events/SantaSelectedTasksCard";
+import { SelectTasksForSantaCard } from "@/components/events/SelectTasksForSantaCard";
 import { ChatCard } from "@/components/events/ChatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -216,6 +218,32 @@ export default function EventPage({ params }: EventPageProps) {
             </Card>
 
             <PairsCard pairs={pairs} currentUser={currentUser} />
+
+            <SantaSelectedTasksCard
+              eventId={eventId}
+              pairs={pairs}
+              currentUser={currentUser}
+            />
+
+            <SelectTasksForSantaCard
+              eventId={eventId}
+              pairs={pairs}
+              currentUser={currentUser}
+              onTasksSelected={async () => {
+                // Перезагружаем участников после выбора заданий
+                try {
+                  const participants = await getParticipants();
+                  const updated = participants.find(
+                    (p: Participant) => p.eventId === eventId && p.userId === currentUser?.id
+                  );
+                  if (updated) {
+                    setParticipant(updated);
+                  }
+                } catch (err) {
+                  console.error("Ошибка при обновлении участника:", err);
+                }
+              }}
+            />
 
             <ChatCard
               eventId={eventId}

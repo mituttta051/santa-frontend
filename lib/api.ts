@@ -31,6 +31,8 @@ export {
   createEvent,
   generatePairs,
   getEventPairs,
+  getSelectedTasksForSanta,
+  selectTasksForSanta,
 } from "./events";
 
 // API для пользователей
@@ -45,6 +47,8 @@ export {
   getParticipants,
   createParticipant,
   updateWishlist,
+  assignCollectionToParticipant,
+  unassignCollectionFromParticipant,
 } from "./participants";
 
 // API для авторизации
@@ -62,3 +66,23 @@ export {
   sendMessage,
   markMessageAsRead,
 } from "./messages";
+
+// API для push subscriptions
+export {
+  savePushSubscription,
+  removePushSubscription,
+  serializePushSubscription,
+  type PushSubscriptionData,
+} from "./push-subscriptions";
+
+// API для задач и коллекций
+export {
+  getSantaTasks,
+  getSantaTaskById,
+} from "./santa-tasks";
+
+export {
+  getSantaCollections,
+  getSantaCollectionById,
+  createSantaCollection,
+} from "./santa-collections";
