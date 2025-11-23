@@ -86,3 +86,15 @@ export {
   getSantaCollectionById,
   createSantaCollection,
 } from "./santa-collections";
+
+// API для выполнения заданий
+export {
+  getMyTasksAsSanta,
+  completeTaskWithPhoto,
+  completeTaskWithExistingPhoto,
+  getAllUserPhotos,
+  type CompleteTaskRequest,
+} from "./task-completion";
+
+// API для работы с файлами
+export { uploadFile } from "./files";

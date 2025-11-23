@@ -19,6 +19,7 @@ export function getApiBaseUrl(): string {
       const port = protocol === "https" ? "" : ":8080";
       const apiUrl = `${protocol}://${hostname}${port}/api`;
       console.log("API Base URL (detected from hostname):", apiUrl);
+      console.log("Current location:", window.location.href);
       return apiUrl;
     }
   }

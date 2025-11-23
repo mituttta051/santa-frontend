@@ -93,6 +93,18 @@ export interface SantaTask {
   updatedAt: string;
 }
 
+export interface SantaTaskWithCompletion {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  completed: boolean;
+  proofPhotoObjectName?: string;
+  proofPhotoUrl?: string;
+  completedAt?: string;
+}
+
 export interface CreateTaskRequest {
   title: string;
   description?: string;
@@ -112,5 +124,17 @@ export interface CreateSantaCollectionRequest {
   description?: string;
   taskIds?: string[];
   tasks?: CreateTaskRequest[];
+}
+
+export interface UserPhoto {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  eventId: string;
+  eventName: string;
+  proofPhotoObjectName: string;
+  proofPhotoUrl: string;
+  completedAt: string;
+  createdAt: string;
 }
 
