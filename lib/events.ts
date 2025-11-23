@@ -28,14 +28,6 @@ export async function getEventById(id: string): Promise<Event> {
   return response.json();
 }
 
-export async function getEventBySlug(slug: string): Promise<Event> {
-  const events = await getEvents();
-  const event = events.find((e) => e.slug === slug);
-  if (!event) {
-    throw new Error("Событие не найдено");
-  }
-  return event;
-}
 
 export async function createEvent(event: Partial<Event>): Promise<Event> {
   const apiUrl = getApiBaseUrl();
@@ -61,7 +53,7 @@ export async function createEvent(event: Partial<Event>): Promise<Event> {
   return response.json();
 }
 
-export async function generatePairs(eventId: string): Promise<PairDto[]> {
+export async function generatePairs(eventId: string): Promise<import("./types").AdminPairDto[]> {
   const apiUrl = getApiBaseUrl();
   const url = fixApiUrl(`${apiUrl}/events/${eventId}/generate-pairs`);
   const response = await fetch(url, {
@@ -74,7 +66,24 @@ export async function generatePairs(eventId: string): Promise<PairDto[]> {
   return response.json();
 }
 
-export async function getEventPairs(eventId: string): Promise<PairDto[]> {
+export async function regeneratePairs(eventId: string): Promise<import("./types").AdminPairDto[]> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/regenerate-pairs`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Не удалось перегенерировать пары");
+  }
+  return response.json();
+}
+
+/**
+ * Get all pairs for an event (admin only).
+ * Returns all pairs with full information including Santa details.
+ */
+export async function getEventPairs(eventId: string): Promise<import("./types").AdminPairDto[]> {
   const apiUrl = getApiBaseUrl();
   const url = fixApiUrl(`${apiUrl}/events/${eventId}/pairs`);
   const response = await fetch(url, {
@@ -82,6 +91,26 @@ export async function getEventPairs(eventId: string): Promise<PairDto[]> {
   });
   if (!response.ok) {
     throw new Error("Не удалось загрузить пары мероприятия");
+  }
+  return response.json();
+}
+
+/**
+ * Get the current user's pair where they are acting as Santa.
+ * Returns only child information (without Santa information to keep identity secret).
+ * Returns null if pairs are not generated yet or user is not a Santa.
+ */
+export async function getMyPair(eventId: string): Promise<PairDto | null> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/my-pair`);
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 404) {
+      return null; // Pairs not generated yet
+    }
+    throw new Error("Не удалось загрузить пару");
   }
   return response.json();
 }
@@ -109,6 +138,30 @@ export async function getSelectedTasksForSanta(
     throw new Error(errorMessage);
   }
   return response.json();
+}
+
+export async function getChatPartner(eventId: string): Promise<{ chatPartnerId: string }> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/chat-partner`);
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    let errorMessage = "Не удалось получить информацию о собеседнике";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      const errorText = await response.text();
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
+  }
+  const data = await response.json();
+  return { chatPartnerId: data.chatPartnerId };
 }
 
 export async function selectTasksForSanta(

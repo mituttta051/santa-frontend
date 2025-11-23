@@ -123,9 +123,16 @@ export default function AdminPage() {
   };
 
   const handleParticipantUpdated = (updatedParticipant: Participant) => {
-    setParticipants((prev) =>
-      prev.map((p) => (p.id === updatedParticipant.id ? updatedParticipant : p))
-    );
+    setParticipants((prev) => {
+      const existingIndex = prev.findIndex((p) => p.id === updatedParticipant.id);
+      if (existingIndex >= 0) {
+        // Обновляем существующего участника
+        return prev.map((p) => (p.id === updatedParticipant.id ? updatedParticipant : p));
+      } else {
+        // Добавляем нового участника
+        return [updatedParticipant, ...prev];
+      }
+    });
   };
 
   const handleLoginSuccess = (response: AuthResponse) => {

@@ -12,7 +12,7 @@ import { initializeNotifications, showMessageNotification, hasNotificationPermis
 
 interface ChatCardProps {
   eventId: string;
-  pairs: PairDto[];
+  myPair: PairDto | null;
   participant: Participant | null;
   currentUser: User | null;
 }
@@ -44,12 +44,14 @@ function formatMessageTime(createdAt: string): string {
   }
 }
 
-export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardProps) {
+export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCardProps) {
   const [chatType, setChatType] = useState<ChatType>("santa");
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chatPartnerId, setChatPartnerId] = useState<string | null>(null);
+  const [isLoadingPartner, setIsLoadingPartner] = useState(true);
   // Отслеживаем ID сообщений, которые только что отправлены и еще не обновлены с правильным временем
   const [pendingMessageIds, setPendingMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -58,26 +60,65 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
   const notificationsInitializedRef = useRef(false);
   const isFirstLoadRef = useRef(true);
 
-  // Находим пару, где текущий пользователь является Сантой
-  const myPairAsSanta = pairs.find((p) => p.santaName === currentUser?.name);
-  // Находим пару, где текущий пользователь является Внучком
-  const myPairAsChild = pairs.find((p) => p.childName === currentUser?.name);
+  // If myPair exists, user is Santa; otherwise, user is child
+  const isUserSanta = myPair !== null;
+  const isUserChild = !isUserSanta;
 
-  // Определяем ID собеседника в зависимости от выбранного чата
+  // Определяем ID собеседника
   const getOtherParticipantId = (): string | null => {
     if (!participant) return null;
     
     if (chatType === "santa") {
       // Чат с Сантой: текущий пользователь - Внучок, собеседник - Санта
-      return myPairAsChild?.santaId || null;
+      // Use chatPartnerId from API (which returns Santa's participant ID without revealing name)
+      return isUserChild ? chatPartnerId : null;
     } else {
       // Чат с Внучком: текущий пользователь - Санта, собеседник - Внучок
-      return myPairAsSanta?.childId || null;
+      // Use childId from pair (which is safe to show)
+      return isUserSanta && myPair ? myPair.childId : null;
     }
   };
 
   const otherParticipantId = getOtherParticipantId();
-  const canChat = participant && otherParticipantId;
+  const canChat = participant && otherParticipantId && !isLoadingPartner;
+
+  // Загрузка ID собеседника для чата
+  useEffect(() => {
+    if (!participant || !eventId) {
+      setIsLoadingPartner(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadChatPartner() {
+      try {
+        setIsLoadingPartner(true);
+        // Import getChatPartner dynamically to avoid circular dependencies
+        const { getChatPartner } = await import("@/lib/events");
+        const result = await getChatPartner(eventId);
+        if (isMounted) {
+          setChatPartnerId(result.chatPartnerId);
+        }
+      } catch (err) {
+        console.error("Ошибка при загрузке собеседника для чата:", err);
+        if (isMounted) {
+          // If pairs not generated, chat is not available
+          setChatPartnerId(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingPartner(false);
+        }
+      }
+    }
+
+    loadChatPartner();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId, participant]);
 
   // Инициализация уведомлений
   useEffect(() => {
@@ -89,11 +130,20 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
 
   // Получаем имя отправителя для уведомления
   const getSenderName = (senderId: string): string => {
-    if (senderId === myPairAsChild?.santaId) {
-      return myPairAsChild.santaName;
+    // If sender is the chat partner (Santa for child, or child for Santa)
+    if (senderId === chatPartnerId) {
+      // If user is child, sender is Santa - don't reveal name
+      if (isUserChild) {
+        return "Секретный Санта";
+      }
+      // If user is Santa, sender is child - can show name
+      if (isUserSanta && myPair) {
+        return myPair.childName;
+      }
     }
-    if (senderId === myPairAsSanta?.childId) {
-      return myPairAsSanta.childName;
+    // If sender is child (when user is Santa)
+    if (isUserSanta && myPair && senderId === myPair.childId) {
+      return myPair.childName;
     }
     return "Секретный Санта";
   };
@@ -226,13 +276,29 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
     }
   };
 
+  if (isLoadingPartner) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Чат
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Загрузка...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!canChat) {
     return null;
   }
 
   const otherParticipantName = chatType === "santa" 
-    ? myPairAsChild?.santaName 
-    : myPairAsSanta?.childName;
+    ? "Секретный Санта" // Don't reveal Santa's name for child
+    : (isUserSanta && myPair ? myPair.childName : "Внучок");
 
   return (
     <Card>
@@ -242,7 +308,9 @@ export function ChatCard({ eventId, pairs, participant, currentUser }: ChatCardP
           Чат
         </CardTitle>
         <CardDescription>
-          Общайся с {chatType === "santa" ? "Секретным Сантой" : "Внучком"}
+          {chatType === "santa" 
+            ? "Общайся с Секретным Сантой" 
+            : `Общайся с ${isUserSanta && myPair ? myPair.childName : "Внучком"}`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

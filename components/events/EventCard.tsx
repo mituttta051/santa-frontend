@@ -26,21 +26,21 @@ export function EventCard({ event, showStatus = true }: EventCardProps) {
     const assignment = event.assignmentAt ? new Date(event.assignmentAt) : null;
 
     if (assignment && now < assignment) {
-      return "Регистрация открыта";
+      return "✍️ Регистрация открыта";
     }
     if (wishlistRelease && now < wishlistRelease) {
-      return "Пары распределены";
+      return "🎯 Пары распределены";
     }
     if (wishlistRelease && now >= wishlistRelease) {
-      return "Вишлисты открыты";
+      return "🎁 Вишлисты открыты";
     }
-    return "Активно";
+    return "⚡ Активно";
   };
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <CardTitle className="text-2xl">🎄 {event.name}</CardTitle>
           {showStatus && <Badge variant="outline">{getEventStatus()}</Badge>}
         </div>

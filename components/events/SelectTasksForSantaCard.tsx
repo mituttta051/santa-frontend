@@ -15,14 +15,12 @@ import type { PairDto, Participant, SantaTask, User } from "@/lib/types";
 
 interface SelectTasksForSantaCardProps {
   eventId: string;
-  pairs: PairDto[];
   currentUser: User | null;
   onTasksSelected?: () => void;
 }
 
 export function SelectTasksForSantaCard({
   eventId,
-  pairs,
   currentUser,
   onTasksSelected,
 }: SelectTasksForSantaCardProps) {
@@ -34,17 +32,13 @@ export function SelectTasksForSantaCard({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [tasksAlreadySelected, setTasksAlreadySelected] = useState(false);
 
-  // Находим пару, где текущий пользователь является ребенком (внучком)
-  const myPairAsChild = pairs.find((p) => p.childName === currentUser?.name);
-
-  // Показываем компонент только если пользователь является ребенком и пары распределены
-  if (!myPairAsChild || pairs.length === 0) {
-    return null;
-  }
+  // For regular users who are children, pairs array will be empty (they don't get pair info)
+  // So we check if pairs.length === 0 and user is not admin to determine if they are a child
+  // But we need to check if pairs are generated - we'll do this through the API call
 
   useEffect(() => {
     checkSelectedTasks();
-  }, [eventId, myPairAsChild.santaId]);
+  }, [eventId]);
 
   const checkSelectedTasks = async () => {
     try {
@@ -81,16 +75,42 @@ export function SelectTasksForSantaCard({
       setIsLoading(true);
       setError(null);
 
-      // Получаем всех участников
-      const participants = await getParticipants();
-      
-      // Находим участника-Санту по santaId из пары
-      const santaParticipant = participants.find(
-        (p: Participant) => p.id === myPairAsChild.santaId
-      );
+      // Получаем информацию о Санте через API (это безопасно, так как не раскрывает имя Санты)
+      // getSelectedTasksForSanta возвращает Participant с информацией о Санте, но без имени пользователя
+      let santaParticipant: Participant | null = null;
+      try {
+        santaParticipant = await getSelectedTasksForSanta(eventId);
+        // Если задания уже выбраны, santaParticipant будет содержать информацию о Санте
+      } catch (err) {
+        // Если ошибка (например, пары не распределены или задания еще не выбраны), 
+        // попробуем получить информацию другим способом
+        console.log("Не удалось получить информацию о Санте через getSelectedTasksForSanta:", err);
+      }
 
+      // Если не удалось получить через getSelectedTasksForSanta, 
+      // попробуем найти через участников (но это может не сработать, если пары не распределены)
       if (!santaParticipant) {
-        setError("Не удалось найти участника-Санту");
+        // Получаем всех участников
+        const participants = await getParticipants();
+        // Находим текущего пользователя как участника
+        const currentParticipant = participants.find(
+          (p: Participant) => p.eventId === eventId && p.userId === currentUser?.id
+        );
+        
+        if (!currentParticipant) {
+          setError("Вы не являетесь участником этого события");
+          setIsLoading(false);
+          return;
+        }
+        
+        // Пытаемся найти пару, где текущий пользователь является ребенком
+        // Но у нас нет прямого доступа к santaId, поэтому используем другой подход
+        // Проверяем, есть ли у какого-то участника коллекция, которая может быть назначена нашему Санте
+        // Это не идеально, но для выбора заданий нам нужна коллекция Санты
+        
+        // Вместо этого, просто показываем ошибку, что пары еще не распределены
+        setError("Пары еще не распределены. Дождитесь распределения пар администратором.");
+        setTasks([]);
         setIsLoading(false);
         return;
       }

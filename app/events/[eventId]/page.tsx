@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { use, useEffect, useState, useRef, Suspense } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -11,18 +11,20 @@ import { PairsCard } from "@/components/events/PairsCard";
 import { SantaSelectedTasksCard } from "@/components/events/SantaSelectedTasksCard";
 import { SelectTasksForSantaCard } from "@/components/events/SelectTasksForSantaCard";
 import { ChatCard } from "@/components/events/ChatCard";
+import { AdminPanel } from "@/components/events/AdminPanel";
+import { AdminPairsCard } from "@/components/events/AdminPairsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   getEventById,
-  getEventPairs,
   getParticipants,
   updateWishlist,
   type Event,
   type Participant,
   type PairDto,
 } from "@/lib/api";
+import { getMyPair } from "@/lib/events";
 
 interface EventPageProps {
   params: Promise<{
@@ -30,14 +32,18 @@ interface EventPageProps {
   }>;
 }
 
-export default function EventPage({ params }: EventPageProps) {
-  const router = useRouter();
-  const { isAuthenticated, currentUser } = useApp();
+function EventPageContent({ params }: EventPageProps) {
+  // use(params) должен быть вызван первым, чтобы избежать проблем с порядком хуков
   const { eventId: rawEventId } = use(params);
   const eventId = decodeURIComponent(rawEventId);
+  
+  // Все остальные хуки вызываются после use(params)
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, currentUser } = useApp();
 
   const [event, setEvent] = useState<Event | null>(null);
-  const [pairs, setPairs] = useState<PairDto[]>([]);
+  const [myPair, setMyPair] = useState<PairDto | null>(null);
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [wishlistValue, setWishlistValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -45,15 +51,18 @@ export default function EventPage({ params }: EventPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [wishlistError, setWishlistError] = useState<string | null>(null);
+  const isRedirectingRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
+    if (!isAuthenticated && !isRedirectingRef.current) {
+      isRedirectingRef.current = true;
+      const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, pathname]);
 
   useEffect(() => {
-    if (!isAuthenticated || !currentUser) {
+    if (!isAuthenticated || !currentUser || !eventId) {
       return;
     }
 
@@ -64,11 +73,16 @@ export default function EventPage({ params }: EventPageProps) {
         setIsLoading(true);
         setLoadError(null);
 
-        const [eventData, participants, pairsData] = await Promise.all([
-          getEventById(eventId),
-          getParticipants(),
-          getEventPairs(eventId),
-        ]);
+        // Получаем событие по ID (UUID)
+        const eventData = await getEventById(eventId);
+        
+        if (!isMounted) {
+          return;
+        }
+
+        // Используем UUID события для остальных запросов
+        const eventUuid = eventData.id;
+        const participants = await getParticipants();
 
         if (!isMounted) {
           return;
@@ -76,13 +90,20 @@ export default function EventPage({ params }: EventPageProps) {
 
         const myParticipant =
           participants.find(
-            (p: Participant) => p.eventId === eventId && p.userId === currentUser?.id
+            (p: Participant) => p.eventId === eventUuid && p.userId === currentUser?.id
           ) || null;
 
-        setEvent(eventData);
-        setPairs(pairsData);
-        setParticipant(myParticipant);
-        setWishlistValue(myParticipant?.wishlist || "");
+        // Load pair for all users (including admins who participate in the event)
+        const pair = await getMyPair(eventUuid);
+        if (isMounted) {
+          setMyPair(pair);
+        }
+
+        if (isMounted) {
+          setEvent(eventData);
+          setParticipant(myParticipant);
+          setWishlistValue(myParticipant?.wishlist || "");
+        }
       } catch (error) {
         if (!isMounted) {
           return;
@@ -127,7 +148,7 @@ export default function EventPage({ params }: EventPageProps) {
     }
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isRedirectingRef.current || !eventId) {
     return null;
   }
 
@@ -217,28 +238,54 @@ export default function EventPage({ params }: EventPageProps) {
               </CardContent>
             </Card>
 
-            <PairsCard pairs={pairs} currentUser={currentUser} />
+            {currentUser?.isAdmin && (
+              <>
+                <AdminPanel
+                  event={event!}
+                  currentUser={currentUser}
+                  onPairsGenerated={async () => {
+                    // After generating pairs, reload the page or refresh data
+                    if (!event?.id) return;
+                    try {
+                      const pair = await getMyPair(event.id);
+                      setMyPair(pair);
+                    } catch (err) {
+                      console.error("Ошибка при обновлении пары:", err);
+                    }
+                  }}
+                  onError={(error) => {
+                    setLoadError(error);
+                  }}
+                />
+                <AdminPairsCard event={event!} currentUser={currentUser} />
+              </>
+            )}
+
+            <PairsCard myPair={myPair} currentUser={currentUser} />
 
             <SantaSelectedTasksCard
-              eventId={eventId}
-              pairs={pairs}
+              eventId={event?.id || ""}
+              myPair={myPair}
               currentUser={currentUser}
             />
 
             <SelectTasksForSantaCard
-              eventId={eventId}
-              pairs={pairs}
+              eventId={event?.id || ""}
               currentUser={currentUser}
               onTasksSelected={async () => {
                 // Перезагружаем участников после выбора заданий
+                if (!event?.id) return;
                 try {
                   const participants = await getParticipants();
                   const updated = participants.find(
-                    (p: Participant) => p.eventId === eventId && p.userId === currentUser?.id
+                    (p: Participant) => p.eventId === event.id && p.userId === currentUser?.id
                   );
                   if (updated) {
                     setParticipant(updated);
                   }
+                  // Reload my pair
+                  const pair = await getMyPair(event.id);
+                  setMyPair(pair);
                 } catch (err) {
                   console.error("Ошибка при обновлении участника:", err);
                 }
@@ -246,8 +293,8 @@ export default function EventPage({ params }: EventPageProps) {
             />
 
             <ChatCard
-              eventId={eventId}
-              pairs={pairs}
+              eventId={event?.id || ""}
+              myPair={myPair}
               participant={participant}
               currentUser={currentUser}
             />
@@ -255,6 +302,24 @@ export default function EventPage({ params }: EventPageProps) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+export default function EventPage({ params }: EventPageProps) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background p-4">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Загружаем информацию о мероприятии...
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <EventPageContent params={params} />
+    </Suspense>
   );
 }
 

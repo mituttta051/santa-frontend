@@ -31,7 +31,15 @@ export interface Participant {
   selectedTasks?: SantaTask[];
 }
 
+// PairDto for regular users - does NOT contain Santa information to keep identity secret
 export interface PairDto {
+  childId: string;
+  childName: string;
+  childWishlist?: string;
+}
+
+// AdminPairDto for admin users - contains full information including Santa details
+export interface AdminPairDto {
   santaId: string;
   santaName: string;
   childId: string;

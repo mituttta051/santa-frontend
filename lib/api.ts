@@ -27,9 +27,9 @@ export {
 export {
   getEvents,
   getEventById,
-  getEventBySlug,
   createEvent,
   generatePairs,
+  regeneratePairs,
   getEventPairs,
   getSelectedTasksForSanta,
   selectTasksForSanta,

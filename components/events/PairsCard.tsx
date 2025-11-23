@@ -5,16 +5,14 @@ import { Users } from "lucide-react";
 import type { PairDto, User } from "@/lib/types";
 
 interface PairsCardProps {
-  pairs: PairDto[];
+  myPair: PairDto | null;
   currentUser: User | null;
 }
 
-export function PairsCard({ pairs, currentUser }: PairsCardProps) {
-  if (pairs.length === 0) {
+export function PairsCard({ myPair, currentUser }: PairsCardProps) {
+  if (!myPair) {
     return null;
   }
-
-  const myPair = pairs.find((p) => p.santaName === currentUser?.name);
 
   return (
     <Card>
@@ -25,23 +23,19 @@ export function PairsCard({ pairs, currentUser }: PairsCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {!myPair ? (
-          <p className="text-muted-foreground">Информация о паре не найдена</p>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-muted p-4">
-              <p className="text-lg font-semibold">Твой внучок: {myPair.childName}</p>
-            </div>
-            {myPair.childWishlist && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Вишлист внучка:</p>
-                <div className="rounded-lg border bg-muted p-4">
-                  <p className="whitespace-pre-wrap">{myPair.childWishlist}</p>
-                </div>
-              </div>
-            )}
+        <div className="space-y-4">
+          <div className="rounded-lg border bg-muted p-4">
+            <p className="text-lg font-semibold">Твой внучок: {myPair.childName}</p>
           </div>
-        )}
+          {myPair.childWishlist && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Вишлист внучка:</p>
+              <div className="rounded-lg border bg-muted p-4">
+                <p className="whitespace-pre-wrap">{myPair.childWishlist}</p>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, RefreshCcw, X } from "lucide-react";
+import { Users, RefreshCcw, X, UserPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import {
   assignCollectionToParticipant,
   unassignCollectionFromParticipant,
   getUsers,
+  createParticipant,
 } from "@/lib/api";
 import type { Event, Participant, SantaCollection, User } from "@/lib/types";
 
@@ -35,6 +36,11 @@ export function ParticipantsCard({
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [assigningCollection, setAssigningCollection] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [addingParticipant, setAddingParticipant] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const loadUsers = async () => {
     try {
@@ -94,6 +100,43 @@ export function ParticipantsCard({
     }
   };
 
+  const handleAddParticipant = async () => {
+    if (!selectedEventId || !selectedUserId) {
+      setAddError("Пожалуйста, выберите событие и пользователя");
+      return;
+    }
+
+    // Проверяем, не является ли пользователь уже участником этого события
+    const existingParticipant = participants.find(
+      (p) => p.eventId === selectedEventId && p.userId === selectedUserId
+    );
+    if (existingParticipant) {
+      setAddError("Этот пользователь уже является участником данного события");
+      return;
+    }
+
+    try {
+      setAddingParticipant(true);
+      setAddError(null);
+      const newParticipant = await createParticipant({
+        eventId: selectedEventId,
+        userId: selectedUserId,
+      });
+      onParticipantUpdated(newParticipant);
+      // Сбрасываем форму
+      setSelectedEventId("");
+      setSelectedUserId("");
+      setShowAddForm(false);
+      // Обновляем список участников
+      onRefresh();
+    } catch (err) {
+      console.error("Ошибка при добавлении участника:", err);
+      setAddError(err instanceof Error ? err.message : "Не удалось добавить участника");
+    } finally {
+      setAddingParticipant(false);
+    }
+  };
+
   // Группируем участников по событиям
   const participantsByEvent = participants.reduce((acc, participant) => {
     const eventId = participant.eventId;
@@ -116,15 +159,99 @@ export function ParticipantsCard({
             Управление участниками и назначение коллекций заданий
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
-          <RefreshCcw className="h-4 w-4" />
-          Обновить
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowAddForm(!showAddForm)}
+            disabled={loading || usersLoading}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Добавить участника
+          </Button>
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
+            <RefreshCcw className="h-4 w-4" />
+            Обновить
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
           <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
+          </div>
+        )}
+
+        {showAddForm && (
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Добавить участника на событие</h3>
+            {addError && (
+              <div className="rounded-md border border-destructive/20 bg-destructive/5 p-2 text-sm text-destructive">
+                {addError}
+              </div>
+            )}
+            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+              <div className="flex-1 space-y-1">
+                <label className="text-xs text-muted-foreground">Событие</label>
+                <select
+                  className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+                  value={selectedEventId}
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    setAddError(null);
+                  }}
+                  disabled={addingParticipant || events.length === 0}
+                >
+                  <option value="">Выберите событие...</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 space-y-1">
+                <label className="text-xs text-muted-foreground">Пользователь</label>
+                <select
+                  className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+                  value={selectedUserId}
+                  onChange={(e) => {
+                    setSelectedUserId(e.target.value);
+                    setAddError(null);
+                  }}
+                  disabled={addingParticipant || usersLoading || users.length === 0}
+                >
+                  <option value="">Выберите пользователя...</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} {user.phoneNumber ? `(${user.phoneNumber})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleAddParticipant}
+                  disabled={addingParticipant || !selectedEventId || !selectedUserId}
+                >
+                  {addingParticipant ? "Добавление..." : "Добавить"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setSelectedEventId("");
+                    setSelectedUserId("");
+                    setAddError(null);
+                  }}
+                  disabled={addingParticipant}
+                >
+                  Отмена
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

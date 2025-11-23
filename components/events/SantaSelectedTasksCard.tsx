@@ -13,13 +13,13 @@ import type { SantaTaskWithCompletion } from "@/lib/types";
 
 interface SantaSelectedTasksCardProps {
   eventId: string;
-  pairs: PairDto[];
+  myPair: PairDto | null;
   currentUser: User | null;
 }
 
 export function SantaSelectedTasksCard({
   eventId,
-  pairs,
+  myPair,
   currentUser,
 }: SantaSelectedTasksCardProps) {
   const [tasks, setTasks] = useState<SantaTaskWithCompletion[]>([]);
@@ -30,17 +30,14 @@ export function SantaSelectedTasksCard({
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Находим пару, где текущий пользователь является Сантой
-  const myPairAsSanta = pairs.find((p) => p.santaName === currentUser?.name);
-
   // Показываем компонент только если пользователь является Сантой и пары распределены
-  if (!myPairAsSanta || pairs.length === 0) {
+  if (!myPair) {
     return null;
   }
 
   useEffect(() => {
     loadTasks();
-  }, [eventId, myPairAsSanta.santaId]);
+  }, [eventId]);
 
   const loadTasks = async () => {
     try {

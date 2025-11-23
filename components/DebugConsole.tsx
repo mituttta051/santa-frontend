@@ -8,6 +8,20 @@ export function DebugConsole() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Добавляем начальную информацию асинхронно, чтобы не вызывать setState во время рендера
+    const apiUrl = getApiBaseUrl();
+    const fixedUrl = fixApiUrl(`${apiUrl}/test`);
+    // Используем setTimeout для отложенного обновления состояния
+    setTimeout(() => {
+      setLogs([
+        `[INFO] API Base URL (raw): ${apiUrl}`,
+        `[INFO] API Base URL (fixed): ${fixedUrl.replace("/test", "")}`,
+        `[INFO] Current hostname: ${typeof window !== "undefined" ? window.location.hostname : "N/A"}`,
+      ]);
+    }, 0);
+  }, []);
+
+  useEffect(() => {
     // Перехватываем console.log
     const originalLog = console.log;
     const originalError = console.error;
@@ -15,27 +29,25 @@ export function DebugConsole() {
 
     console.log = (...args: any[]) => {
       originalLog(...args);
-      setLogs((prev) => [...prev, `[LOG] ${args.map((a) => String(a)).join(" ")}`]);
+      // Используем setTimeout для асинхронного обновления состояния
+      setTimeout(() => {
+        setLogs((prev) => [...prev, `[LOG] ${args.map((a) => String(a)).join(" ")}`]);
+      }, 0);
     };
 
     console.error = (...args: any[]) => {
       originalError(...args);
-      setLogs((prev) => [...prev, `[ERROR] ${args.map((a) => String(a)).join(" ")}`]);
+      setTimeout(() => {
+        setLogs((prev) => [...prev, `[ERROR] ${args.map((a) => String(a)).join(" ")}`]);
+      }, 0);
     };
 
     console.warn = (...args: any[]) => {
       originalWarn(...args);
-      setLogs((prev) => [...prev, `[WARN] ${args.map((a) => String(a)).join(" ")}`]);
+      setTimeout(() => {
+        setLogs((prev) => [...prev, `[WARN] ${args.map((a) => String(a)).join(" ")}`]);
+      }, 0);
     };
-
-    // Добавляем начальную информацию
-    const apiUrl = getApiBaseUrl();
-    const fixedUrl = fixApiUrl(`${apiUrl}/test`);
-    setLogs([
-      `[INFO] API Base URL (raw): ${apiUrl}`,
-      `[INFO] API Base URL (fixed): ${fixedUrl.replace("/test", "")}`,
-      `[INFO] Current hostname: ${typeof window !== "undefined" ? window.location.hostname : "N/A"}`,
-    ]);
 
     return () => {
       console.log = originalLog;
@@ -49,16 +61,22 @@ export function DebugConsole() {
     const originalFetch = window.fetch;
     window.fetch = async (...args: Parameters<typeof fetch>) => {
       const url = typeof args[0] === "string" ? args[0] : args[0].toString();
-      setLogs((prev) => [...prev, `[FETCH] ${args[1]?.method || "GET"} ${url}`]);
+      setTimeout(() => {
+        setLogs((prev) => [...prev, `[FETCH] ${args[1]?.method || "GET"} ${url}`]);
+      }, 0);
       
       try {
         const response = await originalFetch(...args);
         if (!response.ok) {
-          setLogs((prev) => [...prev, `[FETCH ERROR] ${response.status} ${response.statusText} - ${url}`]);
+          setTimeout(() => {
+            setLogs((prev) => [...prev, `[FETCH ERROR] ${response.status} ${response.statusText} - ${url}`]);
+          }, 0);
         }
         return response;
       } catch (error) {
-        setLogs((prev) => [...prev, `[FETCH ERROR] ${error} - ${url}`]);
+        setTimeout(() => {
+          setLogs((prev) => [...prev, `[FETCH ERROR] ${error} - ${url}`]);
+        }, 0);
         throw error;
       }
     };
