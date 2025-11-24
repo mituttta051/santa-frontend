@@ -140,15 +140,15 @@ export async function getSelectedTasksForSanta(
   return response.json();
 }
 
-export async function getChatPartner(eventId: string): Promise<{ chatPartnerId: string }> {
+export async function getChatPartners(eventId: string): Promise<{ santaId: string, childId: string }> {
   const apiUrl = getApiBaseUrl();
-  const url = fixApiUrl(`${apiUrl}/events/${eventId}/chat-partner`);
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/chat-partners`);
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    let errorMessage = "Не удалось получить информацию о собеседнике";
+    let errorMessage = "Не удалось получить информацию о Санте и Внучке";
     try {
       const errorData = await response.json();
       errorMessage = errorData.message || errorData.error || errorMessage;
@@ -161,7 +161,7 @@ export async function getChatPartner(eventId: string): Promise<{ chatPartnerId: 
     throw new Error(errorMessage);
   }
   const data = await response.json();
-  return { chatPartnerId: data.chatPartnerId };
+  return { santaId: data.santaId, childId: data.childId };
 }
 
 export async function selectTasksForSanta(

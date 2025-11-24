@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send, Loader2 } from "lucide-react";
 import { getMessages, sendMessage, markMessageAsRead, type MessageDto, type SendMessageRequest } from "@/lib/api";
-import type { PairDto, Participant, User } from "@/lib/types";
+import type { Participant, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { initializeNotifications, showMessageNotification, hasNotificationPermission } from "@/lib/notifications";
 
 interface ChatCardProps {
   eventId: string;
-  myPair: PairDto | null;
   participant: Participant | null;
   currentUser: User | null;
 }
@@ -44,14 +43,88 @@ function formatMessageTime(createdAt: string): string {
   }
 }
 
-export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCardProps) {
+// Функция для получения даты в формате YYYY-MM-DD (для группировки)
+function getDateKey(createdAt: string): string {
+  if (!createdAt) return "";
+  
+  try {
+    const date = new Date(createdAt);
+    if (isNaN(date.getTime())) return "";
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn("Error getting date key:", error, createdAt);
+    return "";
+  }
+}
+
+// Функция для форматирования даты для отображения (Сегодня/Вчера/дата)
+function formatDateLabel(dateKey: string): string {
+  if (!dateKey) return "";
+  
+  try {
+    const [year, month, day] = dateKey.split("-").map(Number);
+    const messageDate = new Date(year, month - 1, day);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Сбрасываем время для сравнения только дат
+    const messageDateOnly = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+    
+    if (messageDateOnly.getTime() === todayOnly.getTime()) {
+      return "Сегодня";
+    } else if (messageDateOnly.getTime() === yesterdayOnly.getTime()) {
+      return "Вчера";
+    } else {
+      // Форматируем дату в формате "день месяц год"
+      return messageDate.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    }
+  } catch (error) {
+    console.warn("Error formatting date label:", error, dateKey);
+    return dateKey;
+  }
+}
+
+// Функция для группировки сообщений по датам
+function groupMessagesByDate(messages: MessageDto[]): Array<{ dateKey: string; messages: MessageDto[] }> {
+  const grouped = new Map<string, MessageDto[]>();
+  
+  for (const message of messages) {
+    const dateKey = getDateKey(message.createdAt);
+    if (!dateKey) continue;
+    
+    if (!grouped.has(dateKey)) {
+      grouped.set(dateKey, []);
+    }
+    grouped.get(dateKey)!.push(message);
+  }
+  
+  // Сортируем по дате (от старых к новым)
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateKey, messages]) => ({ dateKey, messages }));
+}
+
+export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
   const [chatType, setChatType] = useState<ChatType>("santa");
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chatPartnerId, setChatPartnerId] = useState<string | null>(null);
-  const [isLoadingPartner, setIsLoadingPartner] = useState(true);
+  const [santaId, setSantaId] = useState<string | null>(null);
+  const [childId, setChildId] = useState<string | null>(null);
+  const [isLoadingSanta, setIsLoadingSanta] = useState(true);
+  const [isLoadingChild, setIsLoadingChild] = useState(true);
   // Отслеживаем ID сообщений, которые только что отправлены и еще не обновлены с правильным временем
   const [pendingMessageIds, setPendingMessageIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,10 +133,6 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
   const notificationsInitializedRef = useRef(false);
   const isFirstLoadRef = useRef(true);
 
-  // If myPair exists, user is Santa; otherwise, user is child
-  const isUserSanta = myPair !== null;
-  const isUserChild = !isUserSanta;
-
   // Определяем ID собеседника
   const getOtherParticipantId = (): string | null => {
     if (!participant) return null;
@@ -71,21 +140,23 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
     if (chatType === "santa") {
       // Чат с Сантой: текущий пользователь - Внучок, собеседник - Санта
       // Use chatPartnerId from API (which returns Santa's participant ID without revealing name)
-      return isUserChild ? chatPartnerId : null;
+      return santaId;
     } else {
       // Чат с Внучком: текущий пользователь - Санта, собеседник - Внучок
       // Use childId from pair (which is safe to show)
-      return isUserSanta && myPair ? myPair.childId : null;
+      return childId;
     }
   };
 
   const otherParticipantId = getOtherParticipantId();
-  const canChat = participant && otherParticipantId && !isLoadingPartner;
+  const canChat = participant && otherParticipantId && !isLoadingSanta && !isLoadingChild;
+
 
   // Загрузка ID собеседника для чата
   useEffect(() => {
     if (!participant || !eventId) {
-      setIsLoadingPartner(false);
+      setIsLoadingSanta(false);
+      setIsLoadingChild(false);
       return;
     }
 
@@ -93,22 +164,26 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
 
     async function loadChatPartner() {
       try {
-        setIsLoadingPartner(true);
+        setIsLoadingSanta(true);
+        setIsLoadingChild(true);
         // Import getChatPartner dynamically to avoid circular dependencies
-        const { getChatPartner } = await import("@/lib/events");
-        const result = await getChatPartner(eventId);
+        const { getChatPartners } = await import("@/lib/events");
+        const result = await getChatPartners(eventId);
         if (isMounted) {
-          setChatPartnerId(result.chatPartnerId);
+          setSantaId(result.santaId);
+          setChildId(result.childId);
         }
       } catch (err) {
         console.error("Ошибка при загрузке собеседника для чата:", err);
         if (isMounted) {
           // If pairs not generated, chat is not available
-          setChatPartnerId(null);
+          setSantaId(null);
+          setChildId(null);
         }
       } finally {
         if (isMounted) {
-          setIsLoadingPartner(false);
+          setIsLoadingSanta(false);
+          setIsLoadingChild(false);
         }
       }
     }
@@ -131,19 +206,13 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
   // Получаем имя отправителя для уведомления
   const getSenderName = (senderId: string): string => {
     // If sender is the chat partner (Santa for child, or child for Santa)
-    if (senderId === chatPartnerId) {
+    if (senderId === childId) {
       // If user is child, sender is Santa - don't reveal name
-      if (isUserChild) {
-        return "Секретный Санта";
-      }
-      // If user is Santa, sender is child - can show name
-      if (isUserSanta && myPair) {
-        return myPair.childName;
-      }
+      return "Секретный Санта";
     }
     // If sender is child (when user is Santa)
-    if (isUserSanta && myPair && senderId === myPair.childId) {
-      return myPair.childName;
+    if (senderId === santaId) {
+      return "Внучок";
     }
     return "Секретный Санта";
   };
@@ -276,7 +345,7 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
     }
   };
 
-  if (isLoadingPartner) {
+  if (isLoadingSanta || isLoadingChild) {
     return (
       <Card>
         <CardHeader>
@@ -296,10 +365,6 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
     return null;
   }
 
-  const otherParticipantName = chatType === "santa" 
-    ? "Секретный Санта" // Don't reveal Santa's name for child
-    : (isUserSanta && myPair ? myPair.childName : "Внучок");
-
   return (
     <Card>
       <CardHeader>
@@ -310,7 +375,7 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
         <CardDescription>
           {chatType === "santa" 
             ? "Общайся с Секретным Сантой" 
-            : `Общайся с ${isUserSanta && myPair ? myPair.childName : "Внучком"}`}
+            : "Общайся с Внучком"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -357,48 +422,60 @@ export function ChatCard({ eventId, myPair, participant, currentUser }: ChatCard
             </div>
           ) : (
             <>
-              {messages.map((message) => {
-                const isMyMessage = message.senderId === participant.id;
-                const isPending = pendingMessageIds.has(message.id);
-                return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex w-full",
-                      isMyMessage ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-lg px-4 py-2",
-                        isMyMessage
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background border"
-                      )}
-                    >
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
+              {groupMessagesByDate(messages).map(({ dateKey, messages: dayMessages }) => (
+                <div key={dateKey} className="space-y-2">
+                  {/* Дата посередине */}
+                  <div className="flex justify-center py-2">
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      {formatDateLabel(dateKey)}
+                    </span>
+                  </div>
+                  
+                  {/* Сообщения за этот день */}
+                  {dayMessages.map((message) => {
+                    const isMyMessage = message.senderId === participant.id;
+                    const isPending = pendingMessageIds.has(message.id);
+                    return (
                       <div
+                        key={message.id}
                         className={cn(
-                          "mt-1 flex items-center gap-1 text-xs",
-                          isMyMessage
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground"
+                          "flex w-full",
+                          isMyMessage ? "justify-end" : "justify-start"
                         )}
                       >
-                        {isPending ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          </>
-                        ) : (
-                          formatMessageTime(message.createdAt)
-                        )}
+                        <div
+                          className={cn(
+                            "max-w-[80%] rounded-lg px-4 py-2",
+                            isMyMessage
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border"
+                          )}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                          <div
+                            className={cn(
+                              "mt-1 flex items-center gap-1 text-xs",
+                              isMyMessage
+                                ? "text-primary-foreground/70"
+                                : "text-muted-foreground"
+                            )}
+                          >
+                            {isPending ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              </>
+                            ) : (
+                              formatMessageTime(message.createdAt)
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </>
           )}

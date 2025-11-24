@@ -11,8 +11,6 @@ import { PairsCard } from "@/components/events/PairsCard";
 import { SantaSelectedTasksCard } from "@/components/events/SantaSelectedTasksCard";
 import { SelectTasksForSantaCard } from "@/components/events/SelectTasksForSantaCard";
 import { ChatCard } from "@/components/events/ChatCard";
-import { AdminPanel } from "@/components/events/AdminPanel";
-import { AdminPairsCard } from "@/components/events/AdminPairsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -238,29 +236,6 @@ function EventPageContent({ params }: EventPageProps) {
               </CardContent>
             </Card>
 
-            {currentUser?.isAdmin && (
-              <>
-                <AdminPanel
-                  event={event!}
-                  currentUser={currentUser}
-                  onPairsGenerated={async () => {
-                    // After generating pairs, reload the page or refresh data
-                    if (!event?.id) return;
-                    try {
-                      const pair = await getMyPair(event.id);
-                      setMyPair(pair);
-                    } catch (err) {
-                      console.error("Ошибка при обновлении пары:", err);
-                    }
-                  }}
-                  onError={(error) => {
-                    setLoadError(error);
-                  }}
-                />
-                <AdminPairsCard event={event!} currentUser={currentUser} />
-              </>
-            )}
-
             <PairsCard myPair={myPair} currentUser={currentUser} />
 
             <SantaSelectedTasksCard
@@ -292,12 +267,13 @@ function EventPageContent({ params }: EventPageProps) {
               }}
             />
 
-            <ChatCard
-              eventId={event?.id || ""}
-              myPair={myPair}
-              participant={participant}
-              currentUser={currentUser}
-            />
+            {myPair && (
+              <ChatCard
+                eventId={event?.id || ""}
+                participant={participant}
+                currentUser={currentUser}
+              />
+            )}
           </>
         ) : null}
       </div>

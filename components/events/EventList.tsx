@@ -83,7 +83,7 @@ export function EventList({ events, loading = false }: EventListProps) {
             <div className="flex items-center justify-between">
               <CardTitle>{event.name}</CardTitle>
               {event.slug && (
-                <Link href={`/events/${event.slug}`}>
+                <Link href={`/admin/events/${event.id}`}>
                   <Button variant="outline" size="sm">
                     Открыть
                   </Button>
