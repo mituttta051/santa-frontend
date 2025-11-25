@@ -31,6 +31,7 @@ export {
   generatePairs,
   regeneratePairs,
   getEventPairs,
+  revealChildWishlist,
   getSelectedTasksForSanta,
   selectTasksForSanta,
 } from "./events";

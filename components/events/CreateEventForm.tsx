@@ -15,7 +15,6 @@ interface CreateEventFormProps {
 export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
   const [newEvent, setNewEvent] = useState({
     name: "",
-    slug: "",
     signupDeadline: "",
     assignmentAt: "",
     wishlistReleaseAt: "",
@@ -42,7 +41,6 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
       setIsSubmitting(true);
       const eventData: Partial<Event> = {
         name: newEvent.name.trim(),
-        slug: newEvent.slug.trim() || undefined,
         signupDeadline: newEvent.signupDeadline || undefined,
         assignmentAt: newEvent.assignmentAt || undefined,
         wishlistReleaseAt: newEvent.wishlistReleaseAt,
@@ -53,7 +51,6 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
       await createEvent(eventData);
       setNewEvent({
         name: "",
-        slug: "",
         signupDeadline: "",
         assignmentAt: "",
         wishlistReleaseAt: "",
@@ -91,15 +88,6 @@ export function CreateEventForm({ onSuccess, onCancel }: CreateEventFormProps) {
               setNewEvent({ ...newEvent, name: e.target.value });
               if (error) setError(null);
             }}
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Slug (для ссылки)</label>
-          <Input
-            placeholder="noviy-god-2025"
-            value={newEvent.slug}
-            onChange={(e) => setNewEvent({ ...newEvent, slug: e.target.value })}
             disabled={isSubmitting}
           />
         </div>

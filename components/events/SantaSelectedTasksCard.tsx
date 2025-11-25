@@ -15,12 +15,14 @@ interface SantaSelectedTasksCardProps {
   eventId: string;
   myPair: PairDto | null;
   currentUser: User | null;
+  onTaskCompletion?: () => void;
 }
 
 export function SantaSelectedTasksCard({
   eventId,
   myPair,
   currentUser,
+  onTaskCompletion,
 }: SantaSelectedTasksCardProps) {
   const [tasks, setTasks] = useState<SantaTaskWithCompletion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,39 +32,60 @@ export function SantaSelectedTasksCard({
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!myPair || myPair.childWishlist) {
+      setTasks([]);
+      setIsLoading(false);
+      setError(null);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    async function loadTasks() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const tasksData = await getMyTasksAsSanta(eventId);
+        if (!isMounted) {
+          return;
+        }
+        setTasks(tasksData);
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+        console.error("Ошибка при загрузке заданий:", err);
+        const message =
+          err instanceof Error ? err.message : "Не удалось загрузить задания";
+
+        if (message.includes("не выбраны задания")) {
+          setTasks([]);
+          setError(null);
+        } else {
+          setError(message);
+          setTasks([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadTasks();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId, myPair]);
+
   // Показываем компонент только если пользователь является Сантой и пары распределены
-  if (!myPair) {
+  if (!myPair || myPair.childWishlist) {
     return null;
   }
-
-  useEffect(() => {
-    loadTasks();
-  }, [eventId]);
-
-  const loadTasks = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const tasksData = await getMyTasksAsSanta(eventId);
-      setTasks(tasksData);
-    } catch (err) {
-      console.error("Ошибка при загрузке заданий:", err);
-      const message =
-        err instanceof Error ? err.message : "Не удалось загрузить задания";
-      
-      // Проверяем, не является ли это случаем, когда задания еще не выбраны
-      if (message.includes("не выбраны задания")) {
-        // Не показываем это как ошибку, просто устанавливаем пустой массив
-        setTasks([]);
-        setError(null);
-      } else {
-        setError(message);
-        setTasks([]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleFileSelect = (taskId: string, file: File | null) => {
     if (!file) return;
@@ -100,6 +123,8 @@ export function SantaSelectedTasksCard({
           task.id === taskId ? completedTask : task
         )
       );
+
+      onTaskCompletion?.();
 
       // Clean up preview URL
       if (previewUrls[taskId]) {

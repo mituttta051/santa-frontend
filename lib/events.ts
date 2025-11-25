@@ -115,6 +115,31 @@ export async function getMyPair(eventId: string): Promise<PairDto | null> {
   return response.json();
 }
 
+export async function revealChildWishlist(eventId: string): Promise<PairDto> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/my-pair/reveal-wishlist`);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Не удалось получить wishlist внучка";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      const errorText = await response.text();
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
 export async function getSelectedTasksForSanta(
   eventId: string,
 ): Promise<import("./types").Participant> {

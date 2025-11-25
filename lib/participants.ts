@@ -49,7 +49,17 @@ export async function updateWishlist(participantId: string, wishlist: string): P
     body: wishlist, // Бэкенд ожидает просто строку, не JSON
   });
   if (!response.ok) {
-    throw new Error("Не удалось обновить вишлист");
+    let errorMessage = "Не удалось обновить вишлист";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      const errorText = await response.text();
+      if (errorText) {
+        errorMessage = errorText;
+      }
+    }
+    throw new Error(errorMessage);
   }
   return response.json();
 }

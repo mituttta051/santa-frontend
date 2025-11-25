@@ -3,7 +3,6 @@
 export interface Event {
   id: string;
   name: string;
-  slug?: string;
   signupDeadline?: string;
   assignmentAt?: string;
   wishlistReleaseAt: string;

@@ -50,6 +50,8 @@ function EventPageContent({ params }: EventPageProps) {
   const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [wishlistError, setWishlistError] = useState<string | null>(null);
   const isRedirectingRef = useRef(false);
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
+  const isWishlistLocked = Boolean(myPair);
 
   useEffect(() => {
     if (!isAuthenticated && !isRedirectingRef.current) {
@@ -122,10 +124,15 @@ function EventPageContent({ params }: EventPageProps) {
     };
   }, [eventId, isAuthenticated, currentUser]);
 
-  async function handleWishlistSave(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleWishlistSave(formEvent: React.FormEvent) {
+    formEvent.preventDefault();
     if (!participant?.id) {
       setWishlistError("Вы пока не участвуете в этом мероприятии");
+      return;
+    }
+
+    if (isWishlistLocked) {
+      setWishlistError("Пары уже распределены. Редактирование вишлиста закрыто.");
       return;
     }
 
@@ -196,6 +203,11 @@ function EventPageContent({ params }: EventPageProps) {
                 <CardDescription>
                   Подскажи Секретному Санте, что тебя порадует
                 </CardDescription>
+                {isWishlistLocked && (
+                  <p className="text-sm text-muted-foreground">
+                    Пары уже распределены, изменить вишлист теперь нельзя.
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 {participant ? (
@@ -205,7 +217,7 @@ function EventPageContent({ params }: EventPageProps) {
                       onChange={(e) => setWishlistValue(e.target.value)}
                       placeholder="Например, книга, сладости или сертификат в любимый магазин..."
                       rows={6}
-                      disabled={isSaving}
+                      disabled={isSaving || isWishlistLocked}
                     />
                     {wishlistMessage && (
                       <p className="text-sm text-emerald-600">{wishlistMessage}</p>
@@ -213,20 +225,22 @@ function EventPageContent({ params }: EventPageProps) {
                     {wishlistError && (
                       <p className="text-sm text-destructive">{wishlistError}</p>
                     )}
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button type="submit" className="flex-1" disabled={isSaving}>
-                        {isSaving ? "Сохраняем..." : "Сохранить"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        disabled={isSaving}
-                        onClick={() => setWishlistValue(participant.wishlist || "")}
-                      >
-                        Сбросить изменения
-                      </Button>
-                    </div>
+                    {!isWishlistLocked && (
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button type="submit" className="flex-1" disabled={isSaving}>
+                          {isSaving ? "Сохраняем..." : "Сохранить"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1"
+                          disabled={isSaving}
+                          onClick={() => setWishlistValue(participant.wishlist || "")}
+                        >
+                          Сбросить изменения
+                        </Button>
+                      </div>
+                    )}
                   </form>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -236,19 +250,24 @@ function EventPageContent({ params }: EventPageProps) {
               </CardContent>
             </Card>
 
-            <PairsCard myPair={myPair} currentUser={currentUser} />
+            <PairsCard
+              eventId={event?.id || ""}
+              myPair={myPair}
+              tasksRefreshKey={tasksRefreshKey}
+              onWishlistRevealed={(updatedPair) => setMyPair(updatedPair)}
+            />
 
             <SantaSelectedTasksCard
               eventId={event?.id || ""}
               myPair={myPair}
               currentUser={currentUser}
+              onTaskCompletion={() => setTasksRefreshKey((prev) => prev + 1)}
             />
 
             <SelectTasksForSantaCard
               eventId={event?.id || ""}
               currentUser={currentUser}
               onTasksSelected={async () => {
-                // Перезагружаем участников после выбора заданий
                 if (!event?.id) return;
                 try {
                   const participants = await getParticipants();
@@ -258,9 +277,9 @@ function EventPageContent({ params }: EventPageProps) {
                   if (updated) {
                     setParticipant(updated);
                   }
-                  // Reload my pair
                   const pair = await getMyPair(event.id);
                   setMyPair(pair);
+                  setTasksRefreshKey((prev) => prev + 1);
                 } catch (err) {
                   console.error("Ошибка при обновлении участника:", err);
                 }

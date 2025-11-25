@@ -13,7 +13,7 @@ interface EventListProps {
 }
 
 export function EventList({ events, loading = false }: EventListProps) {
-  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Не указано";
@@ -24,15 +24,15 @@ export function EventList({ events, loading = false }: EventListProps) {
     });
   };
 
-  const copyToClipboard = async (slug: string) => {
-    const fullUrl = `${window.location.origin}/events/${slug}`;
+  const copyToClipboard = async (eventId: string) => {
+    const fullUrl = `${window.location.origin}/events/${eventId}`;
     
     try {
       // Пробуем использовать современный Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(fullUrl);
-        setCopiedSlug(slug);
-        setTimeout(() => setCopiedSlug(null), 2000);
+        setCopiedEventId(eventId);
+        setTimeout(() => setCopiedEventId(null), 2000);
         return;
       }
       
@@ -49,8 +49,8 @@ export function EventList({ events, loading = false }: EventListProps) {
       try {
         const successful = document.execCommand("copy");
         if (successful) {
-          setCopiedSlug(slug);
-          setTimeout(() => setCopiedSlug(null), 2000);
+          setCopiedEventId(eventId);
+          setTimeout(() => setCopiedEventId(null), 2000);
         } else {
           // Если не получилось, показываем ссылку для ручного копирования
           alert(`Скопируйте ссылку вручную:\n${fullUrl}`);
@@ -82,38 +82,30 @@ export function EventList({ events, loading = false }: EventListProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{event.name}</CardTitle>
-              {event.slug && (
-                <Link href={`/admin/events/${event.id}`}>
-                  <Button variant="outline" size="sm">
-                    Открыть
-                  </Button>
-                </Link>
-              )}
+              <Link href={`/admin/events/${event.id}`}>
+                <Button variant="outline" size="sm">
+                  Открыть
+                </Button>
+              </Link>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {event.slug && (
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Ссылка для регистрации:</div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm">
-                    {typeof window !== "undefined" ? window.location.origin : ""}
-                    /events/{event.slug}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(event.slug!)}
-                  >
-                    {copiedSlug === event.slug ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Ссылка для регистрации:</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm">
+                  {typeof window !== "undefined" ? window.location.origin : ""}
+                  /events/{event.id}
+                </code>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(event.id)}>
+                  {copiedEventId === event.id ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            )}
+            </div>
             <div className="space-y-2 text-sm">
               <div>
                 <strong>Вишлисты открываются:</strong> {formatDate(event.wishlistReleaseAt)}
