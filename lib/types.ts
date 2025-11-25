@@ -8,6 +8,7 @@ export interface Event {
   wishlistReleaseAt: string;
   giftDate?: string;
   revealAt?: string;
+  pairsGeneratedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
