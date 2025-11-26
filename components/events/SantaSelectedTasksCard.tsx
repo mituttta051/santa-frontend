@@ -17,6 +17,7 @@ interface SantaSelectedTasksCardProps {
   myPair: PairDto | null;
   currentUser: User | null;
   onTaskCompletion?: () => void;
+  className?: string;
 }
 
 export function SantaSelectedTasksCard({
@@ -24,6 +25,7 @@ export function SantaSelectedTasksCard({
   myPair,
   currentUser,
   onTaskCompletion,
+  className,
 }: SantaSelectedTasksCardProps) {
   const [tasks, setTasks] = useState<SantaTaskWithCompletion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,7 +176,7 @@ export function SantaSelectedTasksCard({
   }
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ListTodo className="h-5 w-5" />

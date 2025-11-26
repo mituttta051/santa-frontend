@@ -18,12 +18,14 @@ interface SelectTasksForSantaCardProps {
   eventId: string;
   currentUser: User | null;
   onTasksSelected?: () => void;
+  className?: string;
 }
 
 export function SelectTasksForSantaCard({
   eventId,
   currentUser,
   onTasksSelected,
+  className,
 }: SelectTasksForSantaCardProps) {
   const [tasks, setTasks] = useState<SantaTask[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
@@ -222,7 +224,7 @@ export function SelectTasksForSantaCard({
   }
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Gift className="h-5 w-5" />

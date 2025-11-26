@@ -14,6 +14,7 @@ interface PairsCardProps {
   myPair: PairDto | null;
   tasksRefreshKey?: number;
   onWishlistRevealed?: (pair: PairDto) => void;
+  className?: string;
 }
 
 export function PairsCard({
@@ -21,6 +22,7 @@ export function PairsCard({
   myPair,
   tasksRefreshKey = 0,
   onWishlistRevealed,
+  className,
 }: PairsCardProps) {
   const [pair, setPair] = useState<PairDto | null>(myPair);
   const [tasksLoading, setTasksLoading] = useState(false);
@@ -126,7 +128,7 @@ export function PairsCard({
   };
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />

@@ -10,11 +10,13 @@ import { getMessages, sendMessage, markMessageAsRead, type MessageDto, type Send
 import type { Participant, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { initializeNotifications, showMessageNotification, hasNotificationPermission } from "@/lib/notifications";
+import { motion } from "motion/react";
 
 interface ChatCardProps {
   eventId: string;
   participant: Participant | null;
   currentUser: User | null;
+  className?: string;
 }
 
 type ChatType = "santa" | "child";
@@ -116,7 +118,7 @@ function groupMessagesByDate(messages: MessageDto[]): Array<{ dateKey: string; m
     .map(([dateKey, messages]) => ({ dateKey, messages }));
 }
 
-export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
+export function ChatCard({ eventId, participant, currentUser, className }: ChatCardProps) {
   const [chatType, setChatType] = useState<ChatType>("santa");
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -351,7 +353,7 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
 
   if (isLoadingSanta || isLoadingChild) {
     return (
-      <Card>
+      <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -370,7 +372,7 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
   }
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
@@ -383,15 +385,32 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Селектор чата */}
-        <div className="flex gap-2 rounded-lg border bg-muted p-1">
+        {/* Селектор чата с анимированным слайдером */}
+        <div className="relative flex gap-2 rounded-lg border bg-muted p-1">
+          {/* Анимированный слайдер */}
+          <motion.div
+            className="absolute inset-y-1 rounded-md bg-background shadow-sm"
+            initial={false}
+            animate={{
+              left: chatType === "santa" ? "4px" : "calc(50% + 4px)",
+            }}
+            style={{
+              width: "calc(50% - 6px)",
+            }}
+            transition={{
+              type: "tween",
+              duration: 0.3,
+              ease: "easeInOut",
+            }}
+          />
+          
           <button
             type="button"
             onClick={() => setChatType("santa")}
             className={cn(
-              "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "relative z-10 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               chatType === "santa"
-                ? "bg-background text-foreground shadow-sm"
+                ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -401,9 +420,9 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
             type="button"
             onClick={() => setChatType("child")}
             className={cn(
-              "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              "relative z-10 flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               chatType === "child"
-                ? "bg-background text-foreground shadow-sm"
+                ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >

@@ -71,10 +71,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
-        <Card>
+        <Card className="animate-slide-up-fade-in">
           <CardHeader>
-            <CardTitle className="text-2xl">🎄 Secret Santa</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl animate-fade-in">🎄 Secret Santa</CardTitle>
+            <CardDescription className="animate-fade-in animate-stagger-1">
               Добро пожаловать, {currentUser?.name || "пользователь"}!
             </CardDescription>
           </CardHeader>
@@ -89,10 +89,13 @@ export default function Home() {
                 </div>
               )}
               {isEventsLoading && (
-                <p className="text-sm text-muted-foreground">Загружаем мероприятия...</p>
+                <div className="space-y-3 animate-fade-in">
+                  <div className="skeleton h-32 w-full" />
+                  <div className="skeleton h-32 w-full" />
+                </div>
               )}
               {!isEventsLoading && eventsError && (
-                <p className="text-sm text-destructive">{eventsError}</p>
+                <p className="error-message text-sm text-destructive">{eventsError}</p>
               )}
               {!isEventsLoading && !eventsError && userEvents.length === 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -100,8 +103,21 @@ export default function Home() {
                 </p>
               )}
               <div className="space-y-3">
-                {userEvents.map((event) => (
-                  <div key={event.id} className="space-y-2">
+                {userEvents.map((event, index) => (
+                  <div
+                    key={event.id}
+                    className={`space-y-2 animate-slide-up-fade-in ${
+                      index === 0
+                        ? "animate-stagger-1"
+                        : index === 1
+                          ? "animate-stagger-2"
+                          : index === 2
+                            ? "animate-stagger-3"
+                            : index === 3
+                              ? "animate-stagger-4"
+                              : "animate-stagger-5"
+                    }`}
+                  >
                     <EventCardWithButton event={event} />
                   </div>
                 ))}

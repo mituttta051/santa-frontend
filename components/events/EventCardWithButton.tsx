@@ -46,7 +46,7 @@ export function EventCardWithButton({ event, showStatus = true }: EventCardWithB
 
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50"
+      className="cursor-pointer transition-all duration-200 hover:bg-accent/50 active:scale-[0.98]"
       onClick={handleCardClick}
     >
       <CardHeader>

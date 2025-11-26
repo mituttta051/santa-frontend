@@ -84,7 +84,7 @@ export function AuthFlow({ eventName, onSuccess, initialStep = "phone" }: AuthFl
         )}
 
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive text-center">
+          <div className="error-message rounded-md bg-destructive/10 p-3 text-sm text-destructive text-center">
             {error}
           </div>
         )}

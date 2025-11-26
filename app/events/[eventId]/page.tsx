@@ -246,16 +246,19 @@ function EventPageContent({ params }: EventPageProps) {
         </div>
 
         {isLoading ? (
-          <Card>
+          <Card className="animate-slide-up-fade-in">
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Загружаем информацию о мероприятии...
+              <div className="space-y-3">
+                <div className="skeleton h-8 w-3/4 mx-auto" />
+                <div className="skeleton h-4 w-1/2 mx-auto" />
+              </div>
             </CardContent>
           </Card>
         ) : loadError ? (
-          <Card>
+          <Card className="animate-slide-up-fade-in">
             <CardHeader>
               <CardTitle>Что-то пошло не так</CardTitle>
-              <CardDescription>{loadError}</CardDescription>
+              <CardDescription className="error-message">{loadError}</CardDescription>
             </CardHeader>
             <CardContent>
               <Button onClick={() => router.refresh()}>Попробовать снова</Button>
@@ -265,7 +268,7 @@ function EventPageContent({ params }: EventPageProps) {
           <>
             <EventCard event={event} />
 
-            <Card>
+            <Card className="animate-slide-up-fade-in animate-stagger-1">
               <CardHeader>
                 <CardTitle>Мой вишлист</CardTitle>
                 <CardDescription>
@@ -288,7 +291,7 @@ function EventPageContent({ params }: EventPageProps) {
                       disabled={isSaving || isWishlistLocked}
                     />
                     {wishlistError && (
-                      <p className="text-sm text-destructive">{wishlistError}</p>
+                      <p className="error-message text-sm text-destructive">{wishlistError}</p>
                     )}
                     {!isWishlistLocked && (
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -320,6 +323,7 @@ function EventPageContent({ params }: EventPageProps) {
               myPair={myPair}
               tasksRefreshKey={tasksRefreshKey}
               onWishlistRevealed={(updatedPair) => setMyPair(updatedPair)}
+              className="animate-slide-up-fade-in animate-stagger-2"
             />
 
             <SantaSelectedTasksCard
@@ -327,6 +331,7 @@ function EventPageContent({ params }: EventPageProps) {
               myPair={myPair}
               currentUser={currentUser}
               onTaskCompletion={() => setTasksRefreshKey((prev) => prev + 1)}
+              className="animate-slide-up-fade-in animate-stagger-3"
             />
 
             <SelectTasksForSantaCard
@@ -349,6 +354,7 @@ function EventPageContent({ params }: EventPageProps) {
                   console.error("Ошибка при обновлении участника:", err);
                 }
               }}
+              className="animate-slide-up-fade-in animate-stagger-4"
             />
 
             {myPair && (
@@ -356,6 +362,7 @@ function EventPageContent({ params }: EventPageProps) {
                 eventId={event?.id || ""}
                 participant={participant}
                 currentUser={currentUser}
+                className="animate-slide-up-fade-in animate-stagger-5"
               />
             )}
           </>
@@ -364,14 +371,14 @@ function EventPageContent({ params }: EventPageProps) {
 
       {isLogoutModalOpen && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 md:items-center md:justify-center"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setIsLogoutModalOpen(false);
             }
           }}
         >
-          <div className="w-full max-w-sm rounded-xl border bg-background shadow-2xl">
+          <div className="modal-content w-full max-w-sm rounded-xl border bg-background shadow-2xl md:rounded-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <h2 className="text-lg font-semibold">Выход</h2>
               <Button 

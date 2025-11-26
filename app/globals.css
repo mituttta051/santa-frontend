@@ -120,3 +120,157 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Slide up + fade in animation */
+  @keyframes slideUpFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scale animation for buttons */
+  @keyframes scaleDown {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(0.95);
+    }
+  }
+
+  /* Pulse animation for skeleton */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Modal backdrop fade in */
+  @keyframes fadeInBackdrop {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Modal slide up from bottom (mobile) */
+  @keyframes slideUpModal {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Modal scale in (desktop) */
+  @keyframes scaleInModal {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Error message slide in */
+  @keyframes slideInError {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Stagger delay utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  .animate-slide-up-fade-in {
+    animation: slideUpFadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-stagger-1 {
+    animation-delay: 0.1s;
+    opacity: 0;
+  }
+
+  .animate-stagger-2 {
+    animation-delay: 0.2s;
+    opacity: 0;
+  }
+
+  .animate-stagger-3 {
+    animation-delay: 0.3s;
+    opacity: 0;
+  }
+
+  .animate-stagger-4 {
+    animation-delay: 0.4s;
+    opacity: 0;
+  }
+
+  .animate-stagger-5 {
+    animation-delay: 0.5s;
+    opacity: 0;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-muted rounded-md animate-pulse;
+  }
+
+  /* Modal animations */
+  .modal-backdrop {
+    animation: fadeInBackdrop 0.2s ease-out forwards;
+  }
+
+  .modal-content {
+    animation: scaleInModal 0.3s ease-out forwards;
+  }
+
+  @media (max-width: 768px) {
+    .modal-content {
+      animation: slideUpModal 0.3s ease-out forwards;
+    }
+  }
+
+  /* Error message animation */
+  .error-message {
+    animation: slideInError 0.3s ease-out forwards;
+  }
+
+  /* Badge animation */
+  .badge-animate {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+}

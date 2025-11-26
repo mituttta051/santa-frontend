@@ -120,8 +120,8 @@ export function CreateTaskCollectionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8">
-      <div className="w-full max-w-4xl rounded-xl border bg-background shadow-2xl">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 md:items-center md:justify-center">
+      <div className="modal-content w-full max-w-4xl rounded-xl border bg-background shadow-2xl md:rounded-xl">
         <form onSubmit={handleSubmit}>
           <CollectionModalHeader onClose={onClose} isSubmitting={isSubmitting} />
 
@@ -155,7 +155,7 @@ export function CreateTaskCollectionModal({
             />
 
             {error && (
-              <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="error-message rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
