@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/context";
-import { EventCard } from "@/components/events/EventCard";
+import { EventCardWithButton } from "@/components/events/EventCardWithButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEvents, getParticipants, type Event, type Participant } from "@/lib/api";
@@ -102,14 +102,7 @@ export default function Home() {
               <div className="space-y-3">
                 {userEvents.map((event) => (
                   <div key={event.id} className="space-y-2">
-                    <EventCard event={event} />
-                    <Button
-                      variant="secondary"
-                      className="w-full"
-                      onClick={() => router.push(`/events/${event.id}`)}
-                    >
-                      Открыть мероприятие
-                    </Button>
+                    <EventCardWithButton event={event} />
                   </div>
                 ))}
               </div>

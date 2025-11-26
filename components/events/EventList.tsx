@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
 import type { Event } from "@/lib/types";
 
 interface EventListProps {
@@ -13,8 +11,6 @@ interface EventListProps {
 }
 
 export function EventList({ events, loading = false }: EventListProps) {
-  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Не указано";
     return new Date(dateString).toLocaleDateString("ru-RU", {
@@ -22,49 +18,6 @@ export function EventList({ events, loading = false }: EventListProps) {
       month: "long",
       year: "numeric",
     });
-  };
-
-  const copyToClipboard = async (eventId: string) => {
-    const fullUrl = `${window.location.origin}/events/${eventId}`;
-    
-    try {
-      // Пробуем использовать современный Clipboard API
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(fullUrl);
-        setCopiedEventId(eventId);
-        setTimeout(() => setCopiedEventId(null), 2000);
-        return;
-      }
-      
-      // Fallback: используем старый метод с временным textarea
-      const textArea = document.createElement("textarea");
-      textArea.value = fullUrl;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-999999px";
-      textArea.style.top = "-999999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-          setCopiedEventId(eventId);
-          setTimeout(() => setCopiedEventId(null), 2000);
-        } else {
-          // Если не получилось, показываем ссылку для ручного копирования
-          alert(`Скопируйте ссылку вручную:\n${fullUrl}`);
-        }
-      } catch (err) {
-        // Если и это не сработало, показываем ссылку
-        alert(`Скопируйте ссылку вручную:\n${fullUrl}`);
-      } finally {
-        document.body.removeChild(textArea);
-      }
-    } catch (err) {
-      // В крайнем случае показываем ссылку для ручного копирования
-      alert(`Скопируйте ссылку вручную:\n${fullUrl}`);
-    }
   };
 
   if (loading) {
@@ -90,22 +43,6 @@ export function EventList({ events, loading = false }: EventListProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Ссылка для регистрации:</div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-md bg-muted px-3 py-2 text-sm">
-                  {typeof window !== "undefined" ? window.location.origin : ""}
-                  /events/{event.id}
-                </code>
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(event.id)}>
-                  {copiedEventId === event.id ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
             <div className="space-y-2 text-sm">
               <div>
                 <strong>Вишлисты открываются:</strong> {formatDate(event.wishlistReleaseAt)}

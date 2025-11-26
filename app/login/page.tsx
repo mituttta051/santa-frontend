@@ -9,15 +9,25 @@ import type { AuthResponse } from "@/lib/types";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login: loginUser, isAuthenticated } = useApp();
+  const { login: loginUser, isAuthenticated, isLoading } = useApp();
 
   const redirectTo = searchParams.get("redirect") || "/";
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Ждем завершения проверки аутентификации перед редиректом
+    if (!isLoading && isAuthenticated) {
       router.push(redirectTo);
     }
-  }, [isAuthenticated, router, redirectTo]);
+  }, [isAuthenticated, isLoading, router, redirectTo]);
+
+  // Показываем loading пока проверяется аутентификация
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <div className="text-center text-muted-foreground">Загрузка...</div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return null; // Пока идет редирект

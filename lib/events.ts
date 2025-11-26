@@ -112,7 +112,24 @@ export async function getMyPair(eventId: string): Promise<PairDto | null> {
     }
     throw new Error("Не удалось загрузить пару");
   }
-  return response.json();
+  
+  // Проверяем, есть ли контент в ответе
+  const contentLength = response.headers.get("content-length");
+  const text = await response.text();
+  
+  // Если ответ пустой или content-length = 0, возвращаем null
+  if (!text || text.trim() === "" || contentLength === "0") {
+    return null;
+  }
+  
+  // Парсим JSON только если есть контент
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    // Если не удалось распарсить, возвращаем null
+    console.warn("Failed to parse my-pair response:", error);
+    return null;
+  }
 }
 
 export async function revealChildWishlist(eventId: string): Promise<PairDto> {

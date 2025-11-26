@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CheckCircle2, Circle, Gift } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,8 +30,8 @@ export function SelectTasksForSantaCard({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [tasksAlreadySelected, setTasksAlreadySelected] = useState(false);
+  const [shouldHide, setShouldHide] = useState(false);
 
   // For regular users who are children, pairs array will be empty (they don't get pair info)
   // So we check if pairs.length === 0 and user is not admin to determine if they are a child
@@ -58,7 +59,17 @@ export function SelectTasksForSantaCard({
           return;
         }
       } catch (err) {
-        // Если ошибка (например, пары не распределены), продолжаем загрузку заданий
+        // Если ошибка (например, пары не распределены), проверяем причину
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes("Пары еще не распределены") || 
+            errorMessage.includes("pairs not generated") ||
+            errorMessage.includes("pairs not distributed")) {
+          // Пары не распределены, скрываем компонент
+          setShouldHide(true);
+          setIsLoading(false);
+          return;
+        }
+        // Другие ошибки - продолжаем загрузку заданий
         console.log("Задания еще не выбраны или ошибка при проверке:", err);
       }
 
@@ -66,6 +77,12 @@ export function SelectTasksForSantaCard({
       await loadTasks();
     } catch (err) {
       console.error("Ошибка при проверке заданий:", err);
+      // Если пары не распределены или другая критическая ошибка, скрываем компонент
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes("Пары еще не распределены") || 
+          errorMessage.includes("pairs not generated")) {
+        setShouldHide(true);
+      }
       setIsLoading(false);
     }
   };
@@ -82,8 +99,17 @@ export function SelectTasksForSantaCard({
         santaParticipant = await getSelectedTasksForSanta(eventId);
         // Если задания уже выбраны, santaParticipant будет содержать информацию о Санте
       } catch (err) {
-        // Если ошибка (например, пары не распределены или задания еще не выбраны), 
-        // попробуем получить информацию другим способом
+        // Если ошибка (например, пары не распределены), скрываем компонент
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage.includes("Пары еще не распределены") || 
+            errorMessage.includes("pairs not generated") ||
+            errorMessage.includes("pairs not distributed")) {
+          setShouldHide(true);
+          setTasks([]);
+          setIsLoading(false);
+          return;
+        }
+        // Другие ошибки - попробуем получить информацию другим способом
         console.log("Не удалось получить информацию о Санте через getSelectedTasksForSanta:", err);
       }
 
@@ -108,8 +134,8 @@ export function SelectTasksForSantaCard({
         // Проверяем, есть ли у какого-то участника коллекция, которая может быть назначена нашему Санте
         // Это не идеально, но для выбора заданий нам нужна коллекция Санты
         
-        // Вместо этого, просто показываем ошибку, что пары еще не распределены
-        setError("Пары еще не распределены. Дождитесь распределения пар администратором.");
+        // Если пары не распределены, скрываем компонент
+        setShouldHide(true);
         setTasks([]);
         setIsLoading(false);
         return;
@@ -117,7 +143,8 @@ export function SelectTasksForSantaCard({
 
       // Проверяем, есть ли у Санты закрепленная коллекция
       if (!santaParticipant.santaCollectionId) {
-        setError("Для твоего Санты еще не назначена коллекция заданий. Обратитесь к администратору.");
+        // Если коллекция не назначена, скрываем компонент
+        setShouldHide(true);
         setTasks([]);
         setIsLoading(false);
         return;
@@ -168,10 +195,9 @@ export function SelectTasksForSantaCard({
     try {
       setIsSaving(true);
       setError(null);
-      setSuccessMessage(null);
 
       await selectTasksForSanta(eventId, Array.from(selectedTaskIds));
-      setSuccessMessage("Задания успешно выбраны для твоего Санты!");
+      toast.success("Задания успешно выбраны для твоего Санты!");
       
       // После успешного выбора скрываем компонент
       setTasksAlreadySelected(true);
@@ -184,13 +210,14 @@ export function SelectTasksForSantaCard({
       const message =
         err instanceof Error ? err.message : "Не удалось выбрать задания. Попробуйте позже.";
       setError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Если задания уже выбраны, не показываем компонент
-  if (tasksAlreadySelected) {
+  // Если задания уже выбраны, пары не распределены или коллекция не назначена, не показываем компонент
+  if (tasksAlreadySelected || shouldHide) {
     return null;
   }
 
@@ -212,10 +239,6 @@ export function SelectTasksForSantaCard({
         ) : error && !isSaving ? (
           <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
-          </div>
-        ) : successMessage ? (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-            {successMessage}
           </div>
         ) : tasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">

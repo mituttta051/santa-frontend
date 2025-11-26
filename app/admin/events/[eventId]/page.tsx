@@ -25,7 +25,7 @@ function AdminEventPageContent({ params }: AdminEventPageProps) {
 
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, currentUser } = useApp();
+  const { isAuthenticated, currentUser, isLoading: isAuthLoading } = useApp();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +34,13 @@ function AdminEventPageContent({ params }: AdminEventPageProps) {
   const isRedirectingRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated && !isRedirectingRef.current) {
+    // Ждем завершения проверки аутентификации перед редиректом
+    if (!isAuthLoading && !isAuthenticated && !isRedirectingRef.current) {
       isRedirectingRef.current = true;
       const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
       router.push(redirectUrl);
     }
-  }, [isAuthenticated, router, pathname]);
+  }, [isAuthenticated, isAuthLoading, router, pathname]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser?.isAdmin || !eventId) {
@@ -106,6 +107,15 @@ function AdminEventPageContent({ params }: AdminEventPageProps) {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Показываем loading пока проверяется аутентификация
+  if (isAuthLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="text-center text-muted-foreground">Загрузка...</div>
       </div>
     );
   }

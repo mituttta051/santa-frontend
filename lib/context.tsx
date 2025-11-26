@@ -7,6 +7,7 @@ interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
@@ -14,9 +15,12 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // Синхронно проверяем наличие токена для быстрой инициализации
+  const hasToken = typeof window !== "undefined" && !!getAccessToken();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // Если токена нет, сразу считаем что не загружаемся
+  const [isLoading, setIsLoading] = useState(hasToken);
 
   // Проверяем наличие токена при загрузке и получаем информацию о пользователе
   useEffect(() => {
@@ -55,7 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ currentUser, setCurrentUser, isAuthenticated, login, logout }}>
+    <AppContext.Provider value={{ currentUser, setCurrentUser, isAuthenticated, isLoading, login, logout }}>
       {children}
     </AppContext.Provider>
   );

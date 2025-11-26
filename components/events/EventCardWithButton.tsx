@@ -4,13 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Gift } from "lucide-react";
 import type { Event } from "@/lib/types";
+import { Button } from "../ui/button";
+import { useRouter } from "next/navigation";
 
-interface EventCardProps {
+interface EventCardWithButtonProps {
   event: Event;
   showStatus?: boolean;
 }
 
-export function EventCard({ event, showStatus = true }: EventCardProps) {
+export function EventCardWithButton({ event, showStatus = true }: EventCardWithButtonProps) {
+  const router = useRouter();
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Не указано";
     return new Date(dateString).toLocaleDateString("ru-RU", {
@@ -37,15 +40,22 @@ export function EventCard({ event, showStatus = true }: EventCardProps) {
     return "⚡ Активно";
   };
 
+  const handleCardClick = () => {
+    router.push(`/events/${event.id}`);
+  };
+
   return (
-    <Card>
+    <Card
+      className="cursor-pointer transition-colors hover:bg-accent/50"
+      onClick={handleCardClick}
+    >
       <CardHeader>
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <CardTitle className="text-2xl">{event.name}</CardTitle>
           {showStatus && <Badge variant="outline">{getEventStatus()}</Badge>}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
           {event.signupDeadline && (
             <div className="flex items-center gap-2">
@@ -60,7 +70,18 @@ export function EventCard({ event, showStatus = true }: EventCardProps) {
             </div>
           )}
         </div>
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCardClick();
+          }}
+        >
+          Открыть мероприятие
+        </Button>
       </CardContent>
     </Card>
   );
 }
+

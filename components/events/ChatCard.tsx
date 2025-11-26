@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { getMessages, sendMessage, markMessageAsRead, type MessageDto, type SendMessageRequest } from "@/lib/api";
 import type { Participant, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -272,6 +273,7 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
         if (isMounted) {
           const message = err instanceof Error ? err.message : "Не удалось загрузить сообщения";
           setError(message);
+          toast.error(message);
         }
       }
     }
@@ -336,10 +338,12 @@ export function ChatCard({ eventId, participant, currentUser }: ChatCardProps) {
       setMessages((prev) => [...prev, sentMessage]);
       // Добавляем ID сообщения в pending, чтобы показывать индикатор загрузки вместо времени
       setPendingMessageIds((prev) => new Set(prev).add(sentMessage.id));
+      toast.success("Сообщение отправлено");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Не удалось отправить сообщение";
       setError(message);
       setNewMessage(messageContent); // Возвращаем текст обратно
+      toast.error(message);
     } finally {
       setIsSending(false);
     }

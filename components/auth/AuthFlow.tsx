@@ -38,7 +38,7 @@ export function AuthFlow({ eventName, onSuccess, initialStep = "phone" }: AuthFl
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">
-          {eventName ? `🎄 ${eventName}` : "🎄 Secret Santa"}
+          {eventName ? `${eventName}` : "Secret Santa"}
         </CardTitle>
         <CardDescription>
           {authStep === "phone" && "Введи свой номер телефона, чтобы начать"}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, ListTodo, Upload, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export function SantaSelectedTasksCard({
         } else {
           setError(message);
           setTasks([]);
+          toast.error(message);
         }
       } finally {
         if (isMounted) {
@@ -92,13 +94,17 @@ export function SantaSelectedTasksCard({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      setError("Пожалуйста, выберите изображение");
+      const errorMsg = "Пожалуйста, выберите изображение";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setError("Размер файла не должен превышать 10 МБ");
+      const errorMsg = "Размер файла не должен превышать 10 МБ";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
@@ -124,6 +130,7 @@ export function SantaSelectedTasksCard({
         )
       );
 
+      toast.success("Задание успешно выполнено!");
       onTaskCompletion?.();
 
       // Clean up preview URL
@@ -140,6 +147,7 @@ export function SantaSelectedTasksCard({
       const message =
         err instanceof Error ? err.message : "Не удалось отметить задание как выполненное";
       setError(message);
+      toast.error(message);
     } finally {
       setUploadingTaskId(null);
     }
