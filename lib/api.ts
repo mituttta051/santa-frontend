@@ -29,7 +29,7 @@ export {
   getEventById,
   createEvent,
   generatePairs,
-  regeneratePairs,
+  confirmPairs,
   getEventPairs,
   revealChildWishlist,
   getSelectedTasksForSanta,

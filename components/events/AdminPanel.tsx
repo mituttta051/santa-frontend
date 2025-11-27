@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { PairDto, AdminPairDto, Event, User } from "@/lib/types";
-import { generatePairs, regeneratePairs, getEventPairs } from "@/lib/api";
+import type { AdminPairDto, Event, User } from "@/lib/types";
+import { generatePairs, confirmPairs, getEventPairs } from "@/lib/api";
 
 interface AdminPanelProps {
   event: Event;
@@ -20,9 +20,11 @@ export function AdminPanel({
   onError,
 }: AdminPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [hasPairs, setHasPairs] = useState<boolean | null>(null);
   const [isCheckingPairs, setIsCheckingPairs] = useState(true);
+  const [previewPairs, setPreviewPairs] = useState<AdminPairDto[] | null>(null);
+  const [panelError, setPanelError] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
 
   // Check if pairs already exist
@@ -49,19 +51,20 @@ export function AdminPanel({
   }, [event, currentUser]);
 
   const handleGeneratePairs = async () => {
-    // Prevent double clicks and concurrent requests
-    if (isProcessingRef.current || isGenerating || isRegenerating || !event || !currentUser?.isAdmin) {
+    if (isProcessingRef.current || isGenerating || isConfirming || !event || !currentUser?.isAdmin) {
       return;
     }
 
     try {
       isProcessingRef.current = true;
       setIsGenerating(true);
-      await generatePairs(event.id);
-      setHasPairs(true);
-      onPairsGenerated();
+      setPanelError(null);
+      const generatedPairs = await generatePairs(event.id);
+      setPreviewPairs(generatedPairs);
     } catch (err) {
-      onError("Не удалось сгенерировать пары");
+      const message = "Не удалось сгенерировать пары";
+      setPanelError(message);
+      onError(message);
       console.error(err);
     } finally {
       setIsGenerating(false);
@@ -69,25 +72,52 @@ export function AdminPanel({
     }
   };
 
-  const handleRegeneratePairs = async () => {
-    // Prevent double clicks and concurrent requests
-    if (isProcessingRef.current || isGenerating || isRegenerating || !event || !currentUser?.isAdmin) {
+  const handleConfirmPairs = async () => {
+    if (
+      isProcessingRef.current ||
+      isGenerating ||
+      isConfirming ||
+      !event ||
+      !currentUser?.isAdmin ||
+      !previewPairs ||
+      previewPairs.length === 0
+    ) {
       return;
     }
 
     try {
       isProcessingRef.current = true;
-      setIsRegenerating(true);
-      await regeneratePairs(event.id);
+      setIsConfirming(true);
+      setPanelError(null);
+
+      await confirmPairs(
+        event.id,
+        previewPairs.map((pair) => ({
+          santaId: pair.santaId,
+          childId: pair.childId,
+        })),
+      );
+
+      setPreviewPairs(null);
       setHasPairs(true);
       onPairsGenerated();
     } catch (err) {
-      onError("Не удалось перегенерировать пары");
+      const message = "Не удалось подтвердить пары";
+      setPanelError(message);
+      onError(message);
       console.error(err);
     } finally {
-      setIsRegenerating(false);
+      setIsConfirming(false);
       isProcessingRef.current = false;
     }
+  };
+
+  const handleCancelPreview = () => {
+    if (isConfirming) {
+      return;
+    }
+    setPanelError(null);
+    setPreviewPairs(null);
   };
 
   if (!currentUser?.isAdmin) {
@@ -95,7 +125,8 @@ export function AdminPanel({
   }
 
   const isLoading = isCheckingPairs;
-  const isProcessing = isGenerating || isRegenerating;
+  const isProcessing = isGenerating || isConfirming;
+  const hasPreview = !!previewPairs && previewPairs.length > 0;
 
   return (
     <Card>
@@ -107,24 +138,68 @@ export function AdminPanel({
           <Button disabled className="w-full" variant="outline">
             Проверка...
           </Button>
-        ) : hasPairs ? (
-          <Button
-            onClick={handleRegeneratePairs}
-            disabled={isProcessing}
-            className="w-full"
-            variant="outline"
-          >
-            {isRegenerating ? "Перегенерация..." : "Перегенерировать пары"}
-          </Button>
         ) : (
-          <Button
-            onClick={handleGeneratePairs}
-            disabled={isProcessing}
-            className="w-full"
-            variant="outline"
-          >
-            {isGenerating ? "Генерация..." : "Сгенерировать пары"}
-          </Button>
+          <>
+            {!hasPreview ? (
+              <Button
+                onClick={handleGeneratePairs}
+                disabled={isProcessing}
+                className="w-full"
+                variant="outline"
+              >
+                {isGenerating
+                  ? "Генерация..."
+                  : hasPairs
+                    ? "Сгенерировать новые пары"
+                    : "Сгенерировать пары"}
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  {hasPairs
+                    ? "После подтверждения текущие пары будут перезаписаны, а участники получат новые уведомления."
+                    : "Проверь пары перед подтверждением. После подтверждения участники получат уведомления."}
+                </div>
+                <div className="max-h-72 space-y-3 overflow-y-auto pr-2">
+                  {previewPairs?.map((pair) => (
+                    <div
+                      key={`${pair.santaId}-${pair.childId}`}
+                      className="rounded-lg border bg-muted/30 p-4"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs uppercase text-muted-foreground">Санта</p>
+                          <p className="font-semibold">{pair.santaName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase text-muted-foreground">Внучок</p>
+                          <p className="font-semibold">{pair.childName}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button onClick={handleConfirmPairs} disabled={isConfirming} className="flex-1">
+                    {isConfirming ? "Подтверждаем..." : "Подтвердить генерацию"}
+                  </Button>
+                  <Button
+                    onClick={handleCancelPreview}
+                    variant="outline"
+                    disabled={isConfirming}
+                    className="flex-1"
+                  >
+                    Отменить
+                  </Button>
+                </div>
+              </div>
+            )}
+            {panelError && (
+              <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                {panelError}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

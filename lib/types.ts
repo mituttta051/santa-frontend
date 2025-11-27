@@ -47,6 +47,11 @@ export interface AdminPairDto {
   childWishlist?: string;
 }
 
+export interface PairAssignment {
+  santaId: string;
+  childId: string;
+}
+
 // Авторизация
 export interface RegisterRequest {
   phoneNumber: string;

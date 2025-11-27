@@ -2,7 +2,7 @@
 
 import { getApiBaseUrl, fixApiUrl } from "./config";
 import { getAuthHeaders } from "./token";
-import type { Event, PairDto } from "./types";
+import type { AdminPairDto, Event, PairAssignment, PairDto } from "./types";
 
 export async function getEvents(): Promise<Event[]> {
   const apiUrl = getApiBaseUrl();
@@ -53,7 +53,7 @@ export async function createEvent(event: Partial<Event>): Promise<Event> {
   return response.json();
 }
 
-export async function generatePairs(eventId: string): Promise<import("./types").AdminPairDto[]> {
+export async function generatePairs(eventId: string): Promise<AdminPairDto[]> {
   const apiUrl = getApiBaseUrl();
   const url = fixApiUrl(`${apiUrl}/events/${eventId}/generate-pairs`);
   const response = await fetch(url, {
@@ -66,15 +66,19 @@ export async function generatePairs(eventId: string): Promise<import("./types").
   return response.json();
 }
 
-export async function regeneratePairs(eventId: string): Promise<import("./types").AdminPairDto[]> {
+export async function confirmPairs(
+  eventId: string,
+  assignments: PairAssignment[],
+): Promise<AdminPairDto[]> {
   const apiUrl = getApiBaseUrl();
-  const url = fixApiUrl(`${apiUrl}/events/${eventId}/regenerate-pairs`);
+  const url = fixApiUrl(`${apiUrl}/events/${eventId}/confirm-pairs`);
   const response = await fetch(url, {
     method: "POST",
     headers: getAuthHeaders(),
+    body: JSON.stringify({ pairs: assignments }),
   });
   if (!response.ok) {
-    throw new Error("Не удалось перегенерировать пары");
+    throw new Error("Не удалось подтвердить пары");
   }
   return response.json();
 }
