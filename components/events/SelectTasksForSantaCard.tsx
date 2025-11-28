@@ -228,23 +228,22 @@ export function SelectTasksForSantaCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Gift className="h-5 w-5" />
-          Выбери задания для своего Санты
+          Выбери праздничные задания для своего Санты 🎅
         </CardTitle>
         <CardDescription>
-          Выбери 3 задания, которые твой Санта
-          будет выполнять.
+          Выбери 3 задания, которые твой Санта выполнит, чтобы порадовать тебя 🎄
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Загрузка заданий...</p>
+          <p className="text-sm text-muted-foreground">Загрузка праздничных заданий... ✨</p>
         ) : error && !isSaving ? (
           <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
           </div>
         ) : tasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Пока нет доступных заданий. Обратитесь к администратору.
+            Пока нет доступных заданий. Обратитесь к администратору — он подготовит что-то волшебное. ✉️
           </p>
         ) : (
           <>
@@ -288,7 +287,7 @@ export function SelectTasksForSantaCard({
 
             <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
               <p className="text-sm text-muted-foreground">
-                Выбрано: {selectedTaskIds.size} из 3
+                🎯 Выбрано: {selectedTaskIds.size} из 3
                 {selectedTaskIds.size < 3 && (
                   <span className="ml-2 text-destructive">
                     (нужно выбрать еще {3 - selectedTaskIds.size})
@@ -300,7 +299,7 @@ export function SelectTasksForSantaCard({
                 disabled={isSaving || selectedTaskIds.size !== 3}
                 size="sm"
               >
-                {isSaving ? "Сохраняем..." : "Сохранить выбор"}
+                {isSaving ? "Сохраняем..." : "Сохранить выбор 🎁"}
               </Button>
             </div>
           </>

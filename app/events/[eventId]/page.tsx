@@ -10,9 +10,9 @@ import { PairsCard } from "@/components/events/PairsCard";
 import { SantaSelectedTasksCard } from "@/components/events/SantaSelectedTasksCard";
 import { SelectTasksForSantaCard } from "@/components/events/SelectTasksForSantaCard";
 import { ChatCard } from "@/components/events/ChatCard";
+import { WishlistCard } from "@/components/events/WishlistCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   getEventById,
@@ -209,7 +209,7 @@ function EventPageContent({ params }: EventPageProps) {
   if (isAuthLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <div className="text-center text-muted-foreground">Загрузка...</div>
+        <div className="text-center text-muted-foreground">Загрузка... ❄️</div>
       </div>
     );
   }
@@ -257,66 +257,16 @@ function EventPageContent({ params }: EventPageProps) {
         ) : loadError ? (
           <Card className="animate-slide-up-fade-in">
             <CardHeader>
-              <CardTitle>Что-то пошло не так</CardTitle>
+              <CardTitle>Ой! Снежинки запутались ❄️</CardTitle>
               <CardDescription className="error-message">{loadError}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => router.refresh()}>Попробовать снова</Button>
+              <Button onClick={() => router.refresh()}>Попробовать снова 🔄</Button>
             </CardContent>
           </Card>
         ) : event ? (
           <>
             <EventCard event={event} />
-
-            <Card className="animate-slide-up-fade-in animate-stagger-1">
-              <CardHeader>
-                <CardTitle>Мой вишлист</CardTitle>
-                <CardDescription>
-                  Подскажи Секретному Санте, что тебя порадует
-                </CardDescription>
-                {isWishlistLocked && (
-                  <p className="text-sm text-muted-foreground">
-                    Пары уже распределены, изменить вишлист теперь нельзя.
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                {participant ? (
-                  <form className="space-y-4" onSubmit={handleWishlistSave}>
-                    <Textarea
-                      value={wishlistValue}
-                      onChange={(e) => setWishlistValue(e.target.value)}
-                      placeholder="Например, книга, сладости или сертификат в любимый магазин..."
-                      rows={6}
-                      disabled={isSaving || isWishlistLocked}
-                    />
-                    {wishlistError && (
-                      <p className="error-message text-sm text-destructive">{wishlistError}</p>
-                    )}
-                    {!isWishlistLocked && (
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Button type="submit" className="flex-1" disabled={isSaving}>
-                          {isSaving ? "Сохраняем..." : "Сохранить"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="flex-1"
-                          disabled={isSaving}
-                          onClick={() => setWishlistValue(participant.wishlist || "")}
-                        >
-                          Сбросить изменения
-                        </Button>
-                      </div>
-                    )}
-                  </form>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Ты пока не участвуешь в этом событии. Попроси администратора добавить тебя.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
 
             <PairsCard
               eventId={event?.id || ""}
@@ -332,6 +282,17 @@ function EventPageContent({ params }: EventPageProps) {
               currentUser={currentUser}
               onTaskCompletion={() => setTasksRefreshKey((prev) => prev + 1)}
               className="animate-slide-up-fade-in animate-stagger-3"
+            />
+
+            <WishlistCard
+              participant={participant}
+              wishlistValue={wishlistValue}
+              setWishlistValue={setWishlistValue}
+              isWishlistLocked={isWishlistLocked}
+              isSaving={isSaving}
+              wishlistError={wishlistError}
+              onSave={handleWishlistSave}
+              className="animate-slide-up-fade-in animate-stagger-1"
             />
 
             <SelectTasksForSantaCard
@@ -409,7 +370,7 @@ function EventPageContent({ params }: EventPageProps) {
                   className="flex-1"
                   onClick={handleLogout}
                 >
-                  Выйти
+                  Выйти 🚪
                 </Button>
               </div>
             </div>
@@ -427,7 +388,7 @@ export default function EventPage({ params }: EventPageProps) {
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Загружаем информацию о мероприятии...
+              Загружаем информацию о мероприятии... 🎄
             </CardContent>
           </Card>
         </div>

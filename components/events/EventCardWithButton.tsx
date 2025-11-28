@@ -37,7 +37,7 @@ export function EventCardWithButton({ event, showStatus = true }: EventCardWithB
     if (wishlistRelease && now >= wishlistRelease) {
       return "🎁 Вишлисты открыты";
     }
-    return "⚡ Активно";
+    return "✨ Активно";
   };
 
   const handleCardClick = () => {
@@ -59,14 +59,12 @@ export function EventCardWithButton({ event, showStatus = true }: EventCardWithB
         <div className="space-y-2 text-sm">
           {event.signupDeadline && (
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Регистрация до: {formatDate(event.signupDeadline)}</span>
+              <span>⏰ Регистрация до: {formatDate(event.signupDeadline)}</span>
             </div>
           )}
           {event.giftDate && (
             <div className="flex items-center gap-2">
-              <Gift className="h-4 w-4 text-muted-foreground" />
-              <span>Подарки открываем: {formatDate(event.giftDate)}</span>
+              <span>🎁 Подарки открываем: {formatDate(event.giftDate)}</span>
             </div>
           )}
         </div>
@@ -78,7 +76,7 @@ export function EventCardWithButton({ event, showStatus = true }: EventCardWithB
             handleCardClick();
           }}
         >
-          Открыть мероприятие
+          Открыть мероприятие ✨
         </Button>
       </CardContent>
     </Card>

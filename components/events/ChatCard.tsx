@@ -340,9 +340,9 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
       setMessages((prev) => [...prev, sentMessage]);
       // Добавляем ID сообщения в pending, чтобы показывать индикатор загрузки вместо времени
       setPendingMessageIds((prev) => new Set(prev).add(sentMessage.id));
-      toast.success("Сообщение отправлено");
+      toast.success("Сообщение отправлено 🎉");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Не удалось отправить сообщение";
+      const message = err instanceof Error ? err.message : "Не удалось отправить сообщение ❄️";
       setError(message);
       setNewMessage(messageContent); // Возвращаем текст обратно
       toast.error(message);
@@ -357,11 +357,11 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
-            Чат
+            Новогодний чат 🎅
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Загрузка...</p>
+          <p className="text-sm text-muted-foreground">Загрузка... ❄️</p>
         </CardContent>
       </Card>
     );
@@ -376,11 +376,11 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
-          Чат
+          Новогодний чат 🎅
         </CardTitle>
         <CardDescription>
-          {chatType === "santa" 
-            ? "Общайся с Секретным Сантой" 
+          {chatType === "santa"
+            ? "Общайся с Секретным Сантой"
             : "Общайся с Внучком"}
         </CardDescription>
       </CardHeader>
@@ -414,7 +414,7 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            С Сантой
+            🎅 С Сантой
           </button>
           <button
             type="button"
@@ -426,7 +426,7 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            С Внучком
+            🎁 С Внучком
           </button>
         </div>
 
@@ -441,7 +441,7 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              Пока нет сообщений. Начни общение первым!
+              Пока нет сообщений. Начни общение первым! 🎄
             </div>
           ) : (
             <>
@@ -509,7 +509,7 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder={`Написать ${chatType === "santa" ? "Санте" : "Внучку"}...`}
+            placeholder={`Написать ${chatType === "santa" ? "Санте" : "Внучку"}... 🎄`}
             disabled={isSending}
             className="flex-1"
           />
@@ -519,7 +519,7 @@ export function ChatCard({ eventId, participant, currentUser, className }: ChatC
         </form>
 
         {error && messages.length > 0 && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">🎄 {error}</p>
         )}
       </CardContent>
     </Card>

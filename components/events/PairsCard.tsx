@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMyTasksAsSanta } from "@/lib/task-completion";
 import { revealChildWishlist } from "@/lib/events";
 import type { PairDto } from "@/lib/types";
+import { GrandchildSpotlight } from "./GrandchildSpotlight";
+import { GrandchildWishlistModal } from "./GrandchildWishlistModal";
 
 interface PairsCardProps {
   eventId: string;
@@ -32,6 +34,8 @@ export function PairsCard({
   const [isRevealing, setIsRevealing] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
   const [revealSuccess, setRevealSuccess] = useState<string | null>(null);
+  const [isWishlistModalOpen, setWishlistModalOpen] = useState(false);
+  const [modalWishlist, setModalWishlist] = useState<string | null>(pair?.childWishlist ?? null);
 
   useEffect(() => {
     setPair(myPair);
@@ -42,6 +46,12 @@ export function PairsCard({
       setTaskStatus({ total: 0, completed: 0 });
       setTaskStatusMessage(null);
       setTaskStatusError(null);
+    }
+  }, [pair?.childWishlist]);
+
+  useEffect(() => {
+    if (pair?.childWishlist) {
+      setModalWishlist(pair.childWishlist);
     }
   }, [pair?.childWishlist]);
 
@@ -99,47 +109,51 @@ export function PairsCard({
     return null;
   }
 
-  const canRevealWishlist =
-    !!eventId &&
-    taskStatus.total > 0 &&
-    taskStatus.completed === taskStatus.total &&
-    !pair.childWishlist;
+  const hasWishlist = Boolean(pair.childWishlist);
+  const canRevealNow =
+    !!eventId && taskStatus.total > 0 && taskStatus.completed === taskStatus.total;
 
-  const handleRevealWishlist = async () => {
-    if (!eventId || !canRevealWishlist || isRevealing) {
+  const openWishlistModal = (wishlistText?: string | null) => {
+    setModalWishlist(wishlistText ?? pair.childWishlist ?? null);
+    setWishlistModalOpen(true);
+  };
+
+  const handleShowWishlist = async () => {
+    if (!eventId || isRevealing) {
       return;
     }
     setRevealError(null);
     setRevealSuccess(null);
 
-    try {
-      setIsRevealing(true);
-      const revealedPair = await revealChildWishlist(eventId);
-      setPair(revealedPair);
-      onWishlistRevealed?.(revealedPair);
-      setRevealSuccess("Вишлист внучка открыт!");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Не удалось получить wishlist внучка";
-      setRevealError(message);
-    } finally {
-      setIsRevealing(false);
+    if (!pair.childWishlist) {
+      if (!canRevealNow) {
+        return;
+      }
+      try {
+        setIsRevealing(true);
+        const revealedPair = await revealChildWishlist(eventId);
+        setPair(revealedPair);
+        onWishlistRevealed?.(revealedPair);
+        openWishlistModal(revealedPair.childWishlist);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Не удалось получить wishlist внучка";
+        setRevealError(message);
+      } finally {
+        setIsRevealing(false);
+      }
+      return;
     }
+    openWishlistModal(pair.childWishlist);
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Мой внучок
-        </CardTitle>
+    <Card className={`overflow-hidden pt-0 ${className ?? ""}`}>
+      <CardHeader className="flex flex-col items-center pb-0 px-0 text-center">
+        <GrandchildSpotlight name={pair.childName} />
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="rounded-lg border bg-muted p-4">
-            <p className="text-lg font-semibold">Твой внучок: {pair.childName}</p>
-          </div>
 
           {!pair.childWishlist && (
             <div className="space-y-3 rounded-lg border bg-muted/40 p-4">
@@ -154,7 +168,7 @@ export function PairsCard({
               {tasksLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Проверяем прогресс...
+                  Проверяем прогресс... 🎄
                 </div>
               ) : taskStatusError ? (
                 <div className="flex items-center gap-2 text-sm text-destructive">
@@ -164,13 +178,19 @@ export function PairsCard({
               ) : (
                 <>
                   {taskStatusMessage && (
-                    <p className="text-sm text-muted-foreground">{taskStatusMessage}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {taskStatusMessage === "Твой внучок еще не выбрал задания."
+                        ? "Твой внучок еще не выбрал задания. Потерпи немного — сюрприз скоро готов! ✨"
+                        : taskStatusMessage === "Выполни все задания и загрузи фото, чтобы открыть wishlist."
+                          ? "Выполни все задания и загрузи фото, чтобы открыть wishlist и узнать мечты внучка 🎁"
+                          : "Все задания выполнены! Можно открыть wishlist внучка и исполнять желания ✨"}
+                    </p>
                   )}
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={!canRevealWishlist || isRevealing}
-                    onClick={handleRevealWishlist}
+                    disabled={(!hasWishlist && !canRevealNow) || isRevealing}
+                    onClick={handleShowWishlist}
                     className="w-full sm:w-auto"
                   >
                     {isRevealing ? (
@@ -179,7 +199,7 @@ export function PairsCard({
                         Получаем...
                       </>
                     ) : (
-                      "Получить wishlist"
+                      "Получить wishlist 🎄"
                     )}
                   </Button>
                 </>
@@ -195,15 +215,29 @@ export function PairsCard({
           )}
 
           {pair.childWishlist && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Вишлист внучка:</p>
-              <div className="rounded-lg border bg-muted p-4">
-                <p className="whitespace-pre-wrap">{pair.childWishlist}</p>
-              </div>
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm text-emerald-900">
+              <p className="font-semibold">Вишлист внучка открыт!</p>
+              <p className="mt-1 text-emerald-800/80">
+                Нажми, чтобы вновь окунуться в его мечты.
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3"
+                onClick={handleShowWishlist}
+              >
+                Открыть wishlist 🌟
+              </Button>
             </div>
           )}
         </div>
       </CardContent>
+      <GrandchildWishlistModal
+        open={isWishlistModalOpen}
+        onOpenChange={setWishlistModalOpen}
+        wishlist={modalWishlist ?? pair.childWishlist ?? ""}
+        childName={pair.childName}
+      />
     </Card>
   );
 }

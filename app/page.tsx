@@ -73,9 +73,9 @@ export default function Home() {
       <div className="w-full max-w-md space-y-8">
         <Card className="animate-slide-up-fade-in">
           <CardHeader>
-            <CardTitle className="text-2xl animate-fade-in">🎄 Secret Santa</CardTitle>
+            <CardTitle className="text-2xl animate-fade-in">🎄🎁 Secret Santa</CardTitle>
             <CardDescription className="animate-fade-in animate-stagger-1">
-              Добро пожаловать, {currentUser?.name || "пользователь"}!
+              Добро пожаловать на праздник, {currentUser?.name || "пользователь"}! ✨
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -84,7 +84,7 @@ export default function Home() {
                 <div>
                   <h3 className="text-lg font-semibold">Мои мероприятия</h3>
                   <p className="text-sm text-muted-foreground">
-                    Все события, в которых вы участвуете
+                    Все события, где ты уже ждешь чудо
                   </p>
                 </div>
               )}
@@ -95,7 +95,9 @@ export default function Home() {
                 </div>
               )}
               {!isEventsLoading && eventsError && (
-                <p className="error-message text-sm text-destructive">{eventsError}</p>
+                <p className="error-message text-sm text-destructive">
+                  Случилась снежная буря: {eventsError}
+                </p>
               )}
               {!isEventsLoading && !eventsError && userEvents.length === 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -131,7 +133,7 @@ export default function Home() {
               }}
               className="w-full"
             >
-              Выйти
+              Выйти 🚪
             </Button>
           </CardContent>
         </Card>

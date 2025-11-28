@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle2, ListTodo, Upload, X, Loader2 } from "lucide-react";
+import { CheckCircle2, ListTodo, Upload, X, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -170,6 +170,10 @@ export function SantaSelectedTasksCard({
     }
   };
 
+  const triggerFileSelection = (taskId: string) => {
+    fileInputRefs.current[taskId]?.click();
+  };
+
   // Если задачи не выбраны, не показываем компонент
   if (!isLoading && tasks.length === 0 && !error) {
     return null;
@@ -180,28 +184,29 @@ export function SantaSelectedTasksCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ListTodo className="h-5 w-5" />
-          Задания для выполнения
+          Задания для волшебства 🎅
         </CardTitle>
         <CardDescription>
-          Твой внучок выбрал эти задания для тебя. Выполни их, чтобы сделать праздник особенным!
+          Твой внучок выбрал эти задания для тебя. Выполни их, чтобы сделать праздник особенным! ✨
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Загрузка заданий...</p>
+          <p className="text-sm text-muted-foreground">Загрузка праздничных заданий... ❄️</p>
         ) : error ? (
           <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
             {error}
           </div>
         ) : tasks.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Задания еще не выбраны. Твой внучок скоро выберет задания для тебя.
+            Задания еще не выбраны. Твой внучок совсем скоро подготовит что-то особенное. 🎁
           </p>
         ) : (
           <div className="space-y-3">
             {tasks.map((task, index) => {
               const isUploading = uploadingTaskId === task.id;
               const hasPreview = previewUrls[task.id] !== undefined;
+              const shouldShowPreview = hasPreview && (!task.completed || isUploading);
               const showProofPhoto = task.completed && task.proofPhotoObjectName;
 
               return (
@@ -236,16 +241,30 @@ export function SantaSelectedTasksCard({
                         )}
                       </div>
 
+                      <input
+                        ref={(el) => {
+                          fileInputRefs.current[task.id] = el;
+                        }}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          handleFileSelect(task.id, file);
+                        }}
+                        disabled={isUploading}
+                      />
+
                       {/* Proof Photo Display */}
                       {showProofPhoto && task.proofPhotoObjectName && (
                         <div className="mt-3 relative">
                           <p className="text-xs font-medium text-muted-foreground mb-2">
-                            Фото-доказательство:
+                            Фото 📸:
                           </p>
                           <div className="relative inline-block">
                             {imageErrors[task.id] ? (
                               <div className="h-32 w-32 flex items-center justify-center rounded-lg border bg-muted text-xs text-muted-foreground text-center p-2">
-                                Изображение не поддерживается браузером (возможно, формат HEIC)
+                                Изображение не поддерживается браузером (возможно, формат HEIC) 🧊
                               </div>
                             ) : (
                               <img
@@ -257,6 +276,19 @@ export function SantaSelectedTasksCard({
                                 }}
                               />
                             )}
+                            <button
+                              type="button"
+                              aria-label="Заменить фото"
+                              onClick={() => triggerFileSelection(task.id)}
+                              disabled={isUploading}
+                              className="absolute top-2 right-2 rounded-full bg-white/90 p-1.5 text-primary shadow-lg transition hover:bg-white disabled:opacity-70"
+                            >
+                              {isUploading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                            </button>
                           </div>
                           {task.completedAt && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -273,7 +305,7 @@ export function SantaSelectedTasksCard({
                       )}
 
                       {/* Photo Preview (before upload) */}
-                      {hasPreview && !task.completed && (
+                      {shouldShowPreview && (
                         <div className="mt-3 relative">
                           <div className="relative inline-block">
                             <img
@@ -295,26 +327,11 @@ export function SantaSelectedTasksCard({
                       {/* Upload Button (if not completed) */}
                       {!task.completed && (
                         <div className="mt-3">
-                          <input
-                            ref={(el) => {
-                              fileInputRefs.current[task.id] = el;
-                            }}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0] || null;
-                              handleFileSelect(task.id, file);
-                            }}
-                            disabled={isUploading}
-                          />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              fileInputRefs.current[task.id]?.click();
-                            }}
+                            onClick={() => triggerFileSelection(task.id)}
                             disabled={isUploading}
                             className="w-full sm:w-auto"
                           >
@@ -326,7 +343,7 @@ export function SantaSelectedTasksCard({
                             ) : (
                               <>
                                 <Upload className="h-4 w-4" />
-                                Загрузить фото-доказательство
+                                Загрузить фото 📸
                               </>
                             )}
                           </Button>
