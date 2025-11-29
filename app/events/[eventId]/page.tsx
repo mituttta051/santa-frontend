@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   getEventById,
-  getEvents,
-  getParticipants,
+  getMyEvents,
+  getMyParticipant,
   updateWishlist,
   type Event,
   type Participant,
@@ -74,18 +74,11 @@ function EventPageContent({ params }: EventPageProps) {
     let isMounted = true;
     async function loadUserEventsCount() {
       try {
-        const [events, participants] = await Promise.all([getEvents(), getParticipants()]);
+        const events = await getMyEvents();
         
         if (!isMounted) return;
 
-        const myEventIds = new Set(
-          participants
-            .filter((participant: Participant) => participant.userId === userId)
-            .map((participant) => participant.eventId)
-        );
-
-        const filteredEvents = events.filter((event: Event) => myEventIds.has(event.id));
-        setUserEventsCount(filteredEvents.length);
+        setUserEventsCount(events.length);
       } catch (error) {
         // Игнорируем ошибки при загрузке количества мероприятий
         console.error("Failed to load user events count:", error);
@@ -120,16 +113,11 @@ function EventPageContent({ params }: EventPageProps) {
 
         // Используем UUID события для остальных запросов
         const eventUuid = eventData.id;
-        const participants = await getParticipants();
+        const myParticipant = await getMyParticipant(eventUuid);
 
         if (!isMounted) {
           return;
         }
-
-        const myParticipant =
-          participants.find(
-            (p: Participant) => p.eventId === eventUuid && p.userId === currentUser?.id
-          ) || null;
 
         // Load pair for all users (including admins who participate in the event)
         const pair = await getMyPair(eventUuid);
@@ -284,27 +272,13 @@ function EventPageContent({ params }: EventPageProps) {
               className="animate-slide-up-fade-in animate-stagger-3"
             />
 
-            <WishlistCard
-              participant={participant}
-              wishlistValue={wishlistValue}
-              setWishlistValue={setWishlistValue}
-              isWishlistLocked={isWishlistLocked}
-              isSaving={isSaving}
-              wishlistError={wishlistError}
-              onSave={handleWishlistSave}
-              className="animate-slide-up-fade-in animate-stagger-1"
-            />
-
             <SelectTasksForSantaCard
               eventId={event?.id || ""}
               currentUser={currentUser}
               onTasksSelected={async () => {
                 if (!event?.id) return;
                 try {
-                  const participants = await getParticipants();
-                  const updated = participants.find(
-                    (p: Participant) => p.eventId === event.id && p.userId === currentUser?.id
-                  );
+                  const updated = await getMyParticipant(event.id);
                   if (updated) {
                     setParticipant(updated);
                   }
@@ -316,6 +290,17 @@ function EventPageContent({ params }: EventPageProps) {
                 }
               }}
               className="animate-slide-up-fade-in animate-stagger-4"
+            />
+
+            <WishlistCard
+              participant={participant}
+              wishlistValue={wishlistValue}
+              setWishlistValue={setWishlistValue}
+              isWishlistLocked={isWishlistLocked}
+              isSaving={isSaving}
+              wishlistError={wishlistError}
+              onSave={handleWishlistSave}
+              className="animate-slide-up-fade-in animate-stagger-1"
             />
 
             {myPair && (

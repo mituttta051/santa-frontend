@@ -6,6 +6,64 @@ import { Textarea } from "@/components/ui/textarea";
 import { useApp } from "@/lib/context";
 import type { Participant } from "@/lib/api";
 
+// Функция для преобразования текста с URL в кликабельные ссылки
+function renderTextWithLinks(text: string, lineIndex: number): React.ReactNode {
+  // Регулярное выражение для поиска URL (http, https, www, или просто домены)
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/g;
+  
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyCounter = 0;
+  
+  while ((match = urlRegex.exec(text)) !== null) {
+    // Добавляем текст до ссылки
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    
+    // Обрабатываем найденную ссылку
+    let url = match[0];
+    let displayUrl = url;
+    
+    // Если ссылка не начинается с http/https, добавляем https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      if (url.startsWith('www.')) {
+        url = 'https://' + url;
+      } else {
+        url = 'https://' + url;
+      }
+    }
+    
+    // Создаем кликабельную ссылку
+    parts.push(
+      <a
+        key={`link-${lineIndex}-${keyCounter++}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline break-all"
+      >
+        {displayUrl}
+      </a>
+    );
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Добавляем оставшийся текст
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  // Если ссылок не найдено, возвращаем исходный текст
+  if (parts.length === 0) {
+    return text;
+  }
+  
+  return <>{parts}</>;
+}
+
 interface WishlistCardProps {
   participant: Participant | null;
   wishlistValue: string;
@@ -73,12 +131,16 @@ export function WishlistCard({
                     <div className="space-y-4">
                       <p className="text-amber-900/80 dark:text-card-foreground/80 font-serif text-base md:text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
                         Я очень старался быть хорошим в этом году! Пожалуйста, посмотри мой список желаний:
-                        {!isWishlistLocked && " Пожалуйста, посмотри мой список желаний:"}
                       </p>
                       
                       {isWishlistLocked && wishlistValue && (
                         <p className="text-amber-900/90 dark:text-card-foreground font-serif text-base leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Georgia, serif' }}>
-                          {wishlistValue}
+                          {wishlistValue.split('\n').map((line, index, array) => (
+                            <span key={index}>
+                              {renderTextWithLinks(line, index)}
+                              {index < array.length - 1 && <br />}
+                            </span>
+                          ))}
                         </p>
                       )}
                       
@@ -90,7 +152,7 @@ export function WishlistCard({
                             placeholder="Напиши здесь свои желания... Например, книга, сладости или сертификат в любимый магазин... ✨"
                             rows={8}
                             disabled={isSaving || isWishlistLocked}
-                            className="bg-amber-50/30 dark:bg-input border-amber-200/50 dark:border-border text-amber-900 dark:text-foreground placeholder:text-amber-600/50 dark:placeholder:text-muted-foreground font-serif text-base leading-relaxed resize-none focus:ring-amber-300/50 dark:focus:ring-ring focus:border-amber-300 dark:focus:border-ring"
+                            className="bg-amber-50/30 dark:bg-input border-amber-200/50 dark:border-border text-amber-900 dark:text-foreground placeholder:text-amber-600/50 dark:placeholder:text-muted-foreground font-serif text-base resize-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-400 dark:focus-visible:border-gray-500"
                             style={{ fontFamily: 'Georgia, serif' }}
                           />
                         </div>

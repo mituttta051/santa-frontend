@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  getParticipants,
   getSantaCollectionById,
   getSelectedTasksForSanta,
   selectTasksForSanta,
@@ -115,27 +114,9 @@ export function SelectTasksForSantaCard({
         console.log("Не удалось получить информацию о Санте через getSelectedTasksForSanta:", err);
       }
 
-      // Если не удалось получить через getSelectedTasksForSanta, 
-      // попробуем найти через участников (но это может не сработать, если пары не распределены)
+      // Если не удалось получить через getSelectedTasksForSanta,
+      // значит пары не распределены или пользователь не является ребенком
       if (!santaParticipant) {
-        // Получаем всех участников
-        const participants = await getParticipants();
-        // Находим текущего пользователя как участника
-        const currentParticipant = participants.find(
-          (p: Participant) => p.eventId === eventId && p.userId === currentUser?.id
-        );
-        
-        if (!currentParticipant) {
-          setError("Вы не являетесь участником этого события");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Пытаемся найти пару, где текущий пользователь является ребенком
-        // Но у нас нет прямого доступа к santaId, поэтому используем другой подход
-        // Проверяем, есть ли у какого-то участника коллекция, которая может быть назначена нашему Санте
-        // Это не идеально, но для выбора заданий нам нужна коллекция Санты
-        
         // Если пары не распределены, скрываем компонент
         setShouldHide(true);
         setTasks([]);

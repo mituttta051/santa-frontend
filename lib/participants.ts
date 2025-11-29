@@ -16,6 +16,25 @@ export async function getParticipants(): Promise<Participant[]> {
   return response.json();
 }
 
+/**
+ * Get the current user's participant for a specific event.
+ * This endpoint is safe and does not reveal pair information.
+ */
+export async function getMyParticipant(eventId: string): Promise<Participant | null> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/participants/my-participant/${eventId}`);
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 404) {
+      return null; // Participant not found
+    }
+    throw new Error("Не удалось загрузить участника");
+  }
+  return response.json();
+}
+
 export async function createParticipant(participant: Partial<Participant>): Promise<Participant> {
   // Формируем объект в формате, который ожидает бэкенд
   // Бэкенд ожидает объекты Event и User с установленными ID

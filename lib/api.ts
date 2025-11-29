@@ -26,6 +26,7 @@ export {
 // API для событий
 export {
   getEvents,
+  getMyEvents,
   getEventById,
   createEvent,
   generatePairs,
@@ -46,6 +47,7 @@ export {
 // API для участников
 export {
   getParticipants,
+  getMyParticipant,
   createParticipant,
   updateWishlist,
   assignCollectionToParticipant,

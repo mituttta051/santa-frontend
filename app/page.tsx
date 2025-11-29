@@ -6,7 +6,7 @@ import { useApp } from "@/lib/context";
 import { EventCardWithButton } from "@/components/events/EventCardWithButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getEvents, getParticipants, type Event, type Participant } from "@/lib/api";
+import { getMyEvents, type Event } from "@/lib/api";
 
 export default function Home() {
   const router = useRouter();
@@ -34,18 +34,11 @@ export default function Home() {
         setIsEventsLoading(true);
         setEventsError(null);
 
-        const [events, participants] = await Promise.all([getEvents(), getParticipants()]);
-
-        const myEventIds = new Set(
-          participants
-            .filter((participant: Participant) => participant.userId === userId)
-            .map((participant) => participant.eventId)
-        );
+        const events = await getMyEvents();
 
         if (!isMounted) return;
 
-        const filteredEvents = events.filter((event: Event) => myEventIds.has(event.id));
-        setUserEvents(filteredEvents);
+        setUserEvents(events);
       } catch (error) {
         if (!isMounted) return;
         const message = error instanceof Error ? error.message : "Не удалось загрузить мероприятия";

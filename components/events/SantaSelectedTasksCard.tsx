@@ -6,10 +6,9 @@ import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getParticipants } from "@/lib/api";
 import { getMyTasksAsSanta, completeTaskWithPhoto } from "@/lib/task-completion";
 import { getFileDownloadUrl } from "@/lib/files";
-import type { PairDto, Participant, User } from "@/lib/types";
+import type { PairDto, User } from "@/lib/types";
 import type { SantaTaskWithCompletion } from "@/lib/types";
 
 interface SantaSelectedTasksCardProps {

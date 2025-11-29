@@ -16,6 +16,22 @@ export async function getEvents(): Promise<Event[]> {
   return response.json();
 }
 
+/**
+ * Get all events where the current user is a participant.
+ * This endpoint is safe and does not reveal pair information.
+ */
+export async function getMyEvents(): Promise<Event[]> {
+  const apiUrl = getApiBaseUrl();
+  const url = fixApiUrl(`${apiUrl}/events/my-events`);
+  const response = await fetch(url, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Не удалось загрузить мои события");
+  }
+  return response.json();
+}
+
 export async function getEventById(id: string): Promise<Event> {
   const apiUrl = getApiBaseUrl();
   const url = fixApiUrl(`${apiUrl}/events/${id}`);
