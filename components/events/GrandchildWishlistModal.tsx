@@ -21,6 +21,28 @@ export function GrandchildWishlistModal({
     setPortalElement(document.body);
   }, []);
 
+  // Блокируем прокрутку страницы когда модальное окно открыто
+  useEffect(() => {
+    if (open) {
+      // Сохраняем текущую позицию прокрутки
+      const scrollY = window.scrollY;
+      // Блокируем прокрутку
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Восстанавливаем прокрутку при закрытии
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [open]);
+
   if (!portalElement || !open) {
     return null;
   }
@@ -29,7 +51,7 @@ export function GrandchildWishlistModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 dark:bg-background/80 px-4 py-8 backdrop-blur-sm"
       onClick={handleClose}
     >
       <div
@@ -39,49 +61,49 @@ export function GrandchildWishlistModal({
         
         {/* Main scroll/letter */}
         <div 
-          className="relative bg-gradient-to-b from-amber-50 via-amber-50 to-amber-50 rounded-lg shadow-2xl border-2 border-amber-200/50 overflow-hidden"
+          className="relative bg-gradient-to-b from-amber-50 via-amber-50 to-amber-50 dark:from-card dark:via-card dark:to-card rounded-lg shadow-2xl border-2 border-amber-200/50 dark:border-border overflow-hidden"
         >
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300/50 text-amber-800 transition-all duration-200 hover:scale-110 shadow-md"
+            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-amber-100 dark:bg-muted hover:bg-amber-200 dark:hover:bg-muted/80 border border-amber-300/50 dark:border-border text-amber-800 dark:text-foreground transition-all duration-200 hover:scale-110 shadow-md"
             aria-label="Закрыть письмо"
           >
             <X className="h-5 w-5" />
           </button>
 
           {/* Decorative top border */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-300/30 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-300/30 dark:via-border to-transparent" />
           
           {/* Letter content */}
           <div className="p-8 md:p-12 relative z-0">
             {/* Letter header */}
             <div className="mb-6 text-center">
-            <div className="inline-block px-4 py-2 bg-amber-100 rounded-full border-2 border-amber-300/50 mt-2">
-                <p className="text-xs text-amber-800/70 font-medium tracking-wider ">✉️ Письмо Деду Морозу</p>
+            <div className="inline-block px-4 py-2 bg-amber-100 dark:bg-muted rounded-full border-2 border-amber-300/50 dark:border-border mt-2">
+                <p className="text-xs text-amber-800/70 dark:text-muted-foreground font-medium tracking-wider ">✉️ Письмо Деду Морозу</p>
               </div>
-              <h2 className="text-2xl md:text-3xl font-serif text-amber-900/90 my-2" style={{ fontFamily: 'Georgia, serif' }}>
+              <h2 className="text-2xl md:text-3xl font-serif text-amber-900/90 dark:text-card-foreground my-2" style={{ fontFamily: 'Georgia, serif' }}>
                 Дорогой Дедушка Мороз! 🎅
               </h2>
             </div>
 
             {/* Letter body */}
             <div className="space-y-4">
-              <p className="text-amber-900/80 font-serif text-base md:text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+              <p className="text-amber-900/80 dark:text-card-foreground/80 font-serif text-base md:text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
                 Я очень старался быть хорошим в этом году! Пожалуйста, посмотри мой список желаний:
               </p>
               
-              <p className="text-amber-900/90 font-serif text-base md:text-lg leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Georgia, serif' }}>
+              <p className="text-amber-900/90 dark:text-card-foreground font-serif text-base md:text-lg leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Georgia, serif' }}>
                 {wishlist?.trim() ? wishlist : "Вишлист пока пуст — спроси внучка о его мечтах и вернись позже."}
               </p>
             </div>
 
             {/* Letter footer */}
             {childName && (
-              <div className="mt-8 pt-6 border-t border-amber-200/30 text-right">
-                <p className="text-amber-900/70 font-serif text-sm italic" style={{ fontFamily: 'Georgia, serif' }}>
+              <div className="mt-8 pt-6 border-t border-amber-200/30 dark:border-border text-right">
+                <p className="text-amber-900/70 dark:text-muted-foreground font-serif text-sm italic" style={{ fontFamily: 'Georgia, serif' }}>
                   С любовью,<br />
-                  <span className="text-amber-900/90 font-semibold">{childName}</span>
+                  <span className="text-amber-900/90 dark:text-card-foreground font-semibold">{childName}</span>
                 </p>
               </div>
             )}

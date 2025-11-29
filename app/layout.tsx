@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppProvider } from "@/lib/context";
 import { DebugConsole } from "@/components/DebugConsole";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,8 +41,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <head>
+        {/* Скрипт для определения системной темы до загрузки страницы */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function getThemePreference() {
+                  if (typeof window !== 'undefined' && window.matchMedia) {
+                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  }
+                  return 'light';
+                }
+                const theme = getThemePreference();
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              })();
+            `,
+          }}
+        />
         {/* Favicon и иконки из RealFaviconGenerator */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-icon.png" />
@@ -52,6 +74,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ThemeProvider />
         <AppProvider>{children}</AppProvider>
         <DebugConsole />
         <Toaster />
